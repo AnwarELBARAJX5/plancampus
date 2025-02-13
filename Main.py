@@ -28,7 +28,7 @@ BoxLayout:
         size_hint: 1, 1  # La carte s'adapte à toute la fenêtre
 """
 
-class MapApp(MDApp):
+class Main(MDApp):
     def build(self):
         screen = Builder.load_string(KV)
         self.mapview = screen.ids.mapview
@@ -65,4 +65,4 @@ class MapApp(MDApp):
             layer.opacity = 0 if layer.opacity == 1 else 1
 
 if __name__ == "__main__":
-    MapApp().run()
+    Main().run()
