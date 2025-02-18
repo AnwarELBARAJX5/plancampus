@@ -39,9 +39,9 @@ class Main(MDApp):
     
 
         # Charger les fichiers GeoJSON
-        directory_path = r"C:\Users\anwar\Desktop\projetinfo\batgeojson"
+        directory_path = r"C:\Users\anwar\Documents\GitHub\plancampus\batgeojson"
         files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.geojson')]
-        #self.load_geojson_layers(files)
+        self.load_geojson_layers(files)
 
         # Lancer l’animation de clignotement
         Clock.schedule_interval(self.toggle_opacity, 0.5)

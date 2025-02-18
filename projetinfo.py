@@ -11,7 +11,7 @@ map1 = folium.Map(location=loc, width="75%", zoom_start=18)
 
 
 # Chemin du répertoire contenant les fichiers GeoJSON
-directory_path = r"C:\Users\anwar\Desktop\projetinfo\batgeojson"
+directory_path = r"C:\Users\anwar\Documents\GitHub\plancampus\batgeojson"
 files = geojson.get_geojson_files(directory_path)
 
 print("Fichiers trouvés :", files)
