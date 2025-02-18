@@ -80,9 +80,27 @@ def generer_salles_batiment(numBat, salleParetage, indices_depart=None):
     db_manager.close()
 
 
-# Utilisation de la fonction externe pour générer et afficher les salles, puis insérer dans la base de données
+def ajouter_salles(numbat, salles):
+    """
+    Ajoute manuellement des salles à un bâtiment spécifique dans la base de données.
 
-generer_salles_batiment(15, [0,0, 8, 2, 13, 5],[0,1,  1, 12, 1,9])
-generer_salles_batiment(5, [13,0, 13, 6],[1, 0, 1, 5])
-generer_salles_batiment(7, [6,0, 6, 2],[0, 0, 0, 0])
-generer_salles_batiment(6, [6,1, 6, 2],[0, 0, 0, 0])
+    :param numbat: Numéro du bâtiment.
+    :param salles: Liste des numéros de salle à ajouter.
+    """
+    # Connexion à la base SQLite
+    conn = sqlite3.connect("batiments.db")
+    cursor = conn.cursor()
+
+    # Insérer chaque salle dans la table Etage
+    for salle in salles:
+        cursor.execute("INSERT INTO Etage (numbat, numsalle) VALUES (?, ?)", (numbat, salle))
+
+    # Valider et fermer la connexion
+    conn.commit()
+    conn.close()
+
+    print(f"Les salles {salles} ont été ajoutées au bâtiment {numbat} avec succès.")
+
+
+
+

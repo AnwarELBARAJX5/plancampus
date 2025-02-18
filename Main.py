@@ -36,12 +36,12 @@ class Main(MDApp):
 
         # Ajout d'un marqueur sur la carte
         marker = MapMarker(lat=43.305446, lon=5.377284)
-        self.mapview.add_widget(marker)
+    
 
         # Charger les fichiers GeoJSON
         directory_path = r"C:\Users\anwar\Desktop\projetinfo\batgeojson"
         files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.geojson')]
-        self.load_geojson_layers(files)
+        #self.load_geojson_layers(files)
 
         # Lancer l’animation de clignotement
         Clock.schedule_interval(self.toggle_opacity, 0.5)
