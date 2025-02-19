@@ -3,7 +3,6 @@ from kivy.config import Config
 # Définir la taille pour un téléphone (ex : 400x800 pixels)
 Config.set('graphics', 'width', '400')   
 Config.set('graphics', 'height', '600')  
-  # Option plein écran
 
 from kivy.lang import Builder
 from kivymd.app import MDApp
@@ -25,7 +24,7 @@ BoxLayout:
         lat: 43.305446
         lon: 5.377284
         zoom: 18
-        size_hint: 1, 1  # La carte s'adapte à toute la fenêtre
+        size_hint: 1, 1
 """
 
 class Main(MDApp):
@@ -36,7 +35,7 @@ class Main(MDApp):
 
         # Ajout d'un marqueur sur la carte
         marker = MapMarker(lat=43.305446, lon=5.377284)
-    
+        self.mapview.add_widget(marker)
 
         # Charger les fichiers GeoJSON
         directory_path = r"C:\Users\anwar\Documents\GitHub\plancampus\batgeojson"

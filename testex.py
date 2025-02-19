@@ -4,7 +4,7 @@ import geojson
 import Batiment
 import DatabaseManager
 from DatabaseManager import *
-
+import osmnx as ox
 
 # Chemin des fichiers GeoJSON
 path = r"C:\Users\anwar\Desktop\projetinfo\batgeojson"
@@ -30,23 +30,38 @@ print(df)
 # Sauvegarder en fichier Excel
 df.to_excel("fichiers_geojso.xlsx", index=False)
 
-generer_salles_batiment(15, [0,0, 8, 2, 13, 5],[0,1,  1, 12, 1,9])
-generer_salles_batiment(5, [13,0, 13, 6],[1, 0, 1, 5])
-generer_salles_batiment(7, [5,0, 7, 2],[1, 0, 0, 0]) #salle 7-05? manquante
-generer_salles_batiment(6, [5],[0])
-generer_salles_batiment(3, [2],[1])#salle 3-05? manquante
-generer_salles_batiment(1, [1],[0])
-generer_salles_batiment(8, [2],[1])
-generer_salles_batiment(9, [1],[2]) #salle 9-05? manquante
-generer_salles_batiment(14,[10,28,13],[1,0,0])
-generer_salles_batiment(2,[],[])
-generer_salles_batiment(13,[],[])
-ajouter_salles(7,["7-051","7-050"])
-ajouter_salles(6,["Bibliotèque Universitaire"])
-ajouter_salles(2,["Grand Amphi"])
-ajouter_salles(3,["3-050","3-051","3-052"])
-ajouter_salles(5,["Amphi Fabry","Amphi Perès","Amphi Marion","Amphi Lavoisier"])
-ajouter_salles(8,["Amphi Sciences Naturelles"])
-ajouter_salles(9,["Amphi Charve","9-051","9-050"])
-ajouter_salles(7,["Amphi Massiani"])
-ajouter_salles(13,["Gymnase"])
+
+import osmnx as ox
+import geopandas as gpd
+
+# Définir le lieu exact
+lieu = "Aix-Marseille Université - campus de saint charles"
+
+# Récupérer la zone sous forme de polygone
+zone_universite = ox.geocode_to_gdf(lieu)
+
+# Télécharger uniquement les routes dans cette zone
+G = ox.graph_from_polygon(zone_universite.unary_union, network_type="walk", simplify=True)
+
+# Convertir en GeoDataFrame
+gdf_edges = ox.graph_to_gdfs(G, nodes=False, edges=True)
+
+# Sauvegarder en GeoJSON
+gdf_edges.to_file("routes_universite.geojson", driver="GeoJSON")
+
+print("Export terminé : fichier routes_universite.geojson")
+
+
+
+# Télécharger les bâtiments avec leurs informations
+batiments = ox.features_from_place(lieu, tags={"building": True})
+
+# Vérifier les colonnes disponibles
+print("📌 Colonnes disponibles :", batiments.columns)
+
+# Afficher les noms et autres infos disponibles
+if "name" in batiments.columns:
+    print("🏛️ Liste des bâtiments avec noms :")
+    print(batiments[["name", "alt_name", "short_name", "image", "website", "source"]].dropna())
+else:
+    print("❌ Aucun nom trouvé pour les bâtiments.")

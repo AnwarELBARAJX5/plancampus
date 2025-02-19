@@ -1,0 +1,50 @@
+import networkx as nx
+import matplotlib.pyplot as plt
+import json
+
+# 📌 Charger le fichier GeoJSON
+geojson_file = r"C:\Users\anwar\Documents\GitHub\plancampus\batgeojson\routes_Universites.geojson"  # Remplace par ton fichier
+with open(geojson_file, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+# 📌 Vérifier la structure
+print("🔍 Clés principales :", data.keys())
+print("🔍 Nombre de features :", len(data["features"]))
+
+# 📌 Afficher un exemple
+print(json.dumps(data["features"][0], indent=2))  # Exemple d'un élément
+
+
+
+# 📌 Initialiser un graphe
+
+G = nx.Graph()
+
+# 📌 Parcourir chaque feature GeoJSON
+for feature in data["features"]:
+    if feature["geometry"]["type"] == "LineString":  # Vérifier que c'est une route
+        coords = feature["geometry"]["coordinates"]
+        
+        # 📌 Ajouter les nœuds et arêtes
+        for i in range(len(coords) - 1):
+            node1 = tuple(coords[i])
+            node2 = tuple(coords[i + 1])
+
+            # 📌 Ajouter les nœuds au graphe
+            G.add_node(node1, pos=node1)
+            G.add_node(node2, pos=node2)
+
+            # 📌 Ajouter l'arête (distance = poids)
+            dist = ((node1[0] - node2[0])**2 + (node1[1] - node2[1])**2) ** 0.5
+            G.add_edge(node1, node2, weight=dist)
+
+print("✅ Graphe créé avec", len(G.nodes), "nœuds et", len(G.edges), "arêtes.")
+
+
+# 📌 Récupérer les positions des nœuds
+pos = nx.get_node_attributes(G, "pos")
+
+# 📌 Afficher le graphe
+plt.figure(figsize=(10, 10))
+nx.draw(G, pos, node_size=10, with_labels=False, edge_color="blue")
+plt.show()
