@@ -16,5 +16,5 @@ def fix_geojson(file_path):
         print(f"✅ Correction appliquée à {file_path}")
 
 # Applique la correction à tous les fichiers GeoJSON
-directory_path = r"C:\Users\anwar\Documents\GitHub\plancampus\batgeojson\routes_Universites.geojson"
+directory_path = r"C:\Users\anwar\Documents\GitHub\plancampus\batgeojson\itineraire_valhalla.geojson"
 fix_geojson(directory_path)
