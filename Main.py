@@ -34,8 +34,7 @@ class Main(MDApp):
         self.geojson_layers = []  # Stocker les couches GeoJSON
 
         # Ajout d'un marqueur sur la carte
-        marker = MapMarker(lat=43.305446, lon=5.377284)
-        self.mapview.add_widget(marker)
+
 
         # Charger les fichiers GeoJSON
         directory_path = r"C:\Users\anwar\Documents\GitHub\plancampus\batgeojson"
