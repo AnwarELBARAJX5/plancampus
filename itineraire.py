@@ -75,8 +75,8 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
         return None  # En cas d'erreur, retourne None
 
 # 📌 Exemple d'utilisation
-start_point = [5.377899, 43.304687]  # 📍 Campus Saint-Charles
-end_point = [5.379358, 43.306450]    # 📍 Destination
+start_point = [5.378129,43.304599]  # 📍 Campus Saint-Charles
+end_point = [5.379358,43.306456]    # 📍 Destination
 
 # 📌 Lancer la fonction
 route_coordinates = get_valhalla_route(start_point, end_point)
