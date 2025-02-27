@@ -1,14 +1,19 @@
 import requests
 import json
 import polyline
+import os
+import sys
+sys.path.append(os.path.abspath("batgeojson"))
+import test
 
 
-
-
+import requests
+import json
+import polyline
 
 def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
     """
-    Récupère un itinéraire pédestre entre deux points et le sauvegarde en GeoJSON.
+    Récupère un itinéraire pédestre entre deux points via Valhalla, génère un fichier GeoJSON et le corrige.
 
     Arguments :
     - start : [longitude, latitude] du point de départ
@@ -17,37 +22,32 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
     
     Retourne :
     - Le chemin sous forme de liste de coordonnées [(lon, lat), (lon, lat), ...]
-    - Sauvegarde le fichier GeoJSON
+    - Sauvegarde le fichier GeoJSON corrigé
     """
 
-    # 📌 API Valhalla
     url = "https://valhalla1.openstreetmap.de/route"
 
-    # 📌 Construire la requête JSON
     data = {
         "locations": [
-            {"lat": start[1], "lon": start[0]},  # ⚠ LATITUDE en premier
+            {"lat": start[1], "lon": start[0]},  
             {"lat": end[1], "lon": end[0]}
         ],
-        "costing": "pedestrian",  # Mode piéton
+        "costing": "pedestrian",  
         "directions_options": {"units": "kilometers"}
     }
 
-    # 📌 Envoyer la requête
     response = requests.post(url, json=data)
 
     if response.status_code == 200:
         route = response.json()
         print("✅ Itinéraire trouvé !")
 
-        # 📌 Extraire et décoder la polyline
+        # 🔹 Décoder la polyline et corriger les coordonnées
         encoded_polyline = route["trip"]["legs"][0]["shape"]
         coordinates = polyline.decode(encoded_polyline)
+        corrected_coordinates = [[lon/10, lat/10] for lat, lon in coordinates]  # 🔄 Correction lat/lon
 
-        # 📌 Correction des coordonnées (inverse lat/lon)
-        corrected_coordinates = [[lon/10, lat/10] for lat, lon in coordinates]
-
-        # 📌 Construire le fichier GeoJSON
+        # 🔹 Générer GeoJSON
         geojson_data = {
             "type": "FeatureCollection",
             "features": [
@@ -57,22 +57,28 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
                         "type": "LineString",
                         "coordinates": corrected_coordinates
                     },
-                    "properties": {"name": "Itinéraire Valhalla"}
+                    "properties": {
+                        "name": "Itinéraire Valhalla",
+                        "stroke-width": 2,  # 🔧 Fix automatique
+                        "stroke": "#FF0000",
+                    }
                 }
             ]
         }
 
-        # 📌 Sauvegarde du fichier GeoJSON
-        with open(filename, "w") as f:
-            json.dump(geojson_data, f)
+        # 🔹 Sauvegarder le fichier GeoJSON
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(geojson_data, f, indent=2)
 
-        print(f"✅ Fichier '{filename}' créé avec succès !")
-
-        return corrected_coordinates  # Retourne la liste des coordonnées
+        print(f"✅ Fichier '{filename}' créé et corrigé avec succès !")
+        return geojson_data  
 
     else:
         print("❌ Erreur API :", response.text)
-        return None  # En cas d'erreur, retourne None
+        return None  
+
+
+
 
 # 📌 Exemple d'utilisation
 start_point = [5.378129,43.304599]  # 📍 Campus Saint-Charles
@@ -83,4 +89,4 @@ route_coordinates = get_valhalla_route(start_point, end_point)
 
 # 📌 Vérifier le résultat
 if route_coordinates:
-    print("\n🗺️ Coordonnées du chemin :", route_coordinates[:5], "...")  # Afficher les 5 premières coordonnées
+    print(route_coordinates)
