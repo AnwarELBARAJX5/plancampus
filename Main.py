@@ -59,6 +59,10 @@ BoxLayout:
 
 class Main(MDApp):
     def build(self):
+        route_file = os.path.join(os.getcwd(), "batgeojson/itineraire_valhalla.geojson")
+        if os.path.exists(route_file):
+            os.remove(route_file)
+            print("🗑 Ancien itinéraire supprimé au démarrage.")
         screen = Builder.load_string(KV)
         self.mapview = screen.ids.mapview
         self.geojson_layers = []  

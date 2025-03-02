@@ -101,6 +101,27 @@ def ajouter_salles(numbat, salles):
 
     print(f"Les salles {salles} ont été ajoutées au bâtiment {numbat} avec succès.")
 
+def bat_adresse(bat):
+    """Récupère l'adresse d'un bâtiment en fonction de son numéro."""
+    conn = sqlite3.connect("batiments.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT adress FROM batiments WHERE numbat=?", (bat))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else None  
 
+def salle_adresse(salle):
+    """Récupère l'adresse d'un bâtiment en fonction de son numéro."""
+    conn = sqlite3.connect("batiments.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT adress FROM Etage WHERE numsalle=?", (salle))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else None  
 
-
+"""def  ajouter_adress(key,adress){
+    conn = sqlite3.connect("batiments.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO Batiments(numbat, numsalle) VALUES (?, ?)", (numbat, salle))
+    
+}"""
