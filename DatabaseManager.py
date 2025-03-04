@@ -18,7 +18,9 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS Batiment (
                 numbat INTEGER PRIMARY KEY,
                 nom TEXT,
-                nbetage INTEGER
+                nbetage INTEGER,
+                long NUMERIC,
+                lat NUMERIC
             )
         ''')
 
@@ -27,7 +29,9 @@ class DatabaseManager:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 numbat INTEGER,
                 numsalle TEXT,
-                FOREIGN KEY (numbat) REFERENCES Batiment(numbat)
+                long NUMERIC,
+                lat NUMERIC,
+                 FOREIGN KEY (numbat) REFERENCES Batiment(numbat)
             )
         ''')
 
