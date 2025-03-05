@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>6</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>168</x>
+      <y>210</y>
+      <w>168</w>
+      <h>174</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;Service&gt;&gt;
+Database::DatabaseManager
+{
+  - Gère la connexion à SQLite
+  - Crée et manipule les tables Batiment et Etage
+  - Insère et récupère des données
+}
+--
+- db_name: String
+- conn: sqlite3.Connection
+- cursor: sqlite3.Cursor
+
+--
++ __init__(db_name: str = "batiments.db")
++ connect()
++ create_tables()
++ insert_batiment(batiment: Batiment)
++ insert_etages(batiment: Batiment)
++ close()
+--
+Responsibilities
+Gérer la base de données SQLite
+Interagir avec la classe Batiment</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>60</x>
+      <y>516</y>
+      <w>342</w>
+      <h>132</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;DataInitializer&gt;&gt;
+Database::DatabaseGenerator
+
+--
+ - dico_adresse: Dict[str, str]
+--
+  + generer_salles_batiment(numbat: int, salleParetage: List[int], indices_depart: List[int])
+  + ajouter_salles(numbat: int, salles: List[str]) 
+  + extract_adresse(dic: Dict[str, str], numbat: int) -&gt; List[float] 
+  + inserer_adresses_bdd(dic: Dict[str, str])
+--
+Responsibilities
+  - Génère les bâtiments et leurs salles dans la base de données
+  - Insère et met à jour les adresses GPS des bâtiments</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>414</x>
+      <y>210</y>
+      <w>156</w>
+      <h>162</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;Entity&gt;&gt;
+Infrastructure::Batiment
+--
+  - numBat: int 
+  - salleParetage: List[int] 
+  - nbetage: int
+  - listesalle: List[str] 
+  - indices_depart: List[int] 
+  - nom: str
+--
+  + __init__(numBat: int, salleParetage: List[int], indices_depart: List[int] = None, nom: str = "") \\l
+  + generationlistesalle() 
+  + afficher_salles()
+--
+Responsibilities
+-- Modéliser un bâtiment 
+--Générer dynamiquement les salles
+--Afficher les salles du bâtiment</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>288</x>
+      <y>0</y>
+      <w>252</w>
+      <h>144</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;UIController&gt;&gt;
+Application::Main
+--
+- mapview: MapView
+- geojson_layers: List[GeoJsonMapLayer]
+- route_layer: GeoJsonMapLayer 
+--
++ build() 
++ load_geojson_layers(directory: str) 
++ toggle_opacity(dt: float) 
++ calculate_route() 
++ add_route_to_map(geojson_file: str)
+--
+Responsibilities
+-- Gérer l'interface utilisateur et la carte interactive 
+-- Charger et afficher les itinéraires et bâtiments sur la carte </panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>588</x>
+      <y>246</y>
+      <w>306</w>
+      <h>114</h>
+    </coordinates>
+    <panel_attributes>&lt;&lt;Service&gt;&gt;
+Routing::ValhallaRouteService
+--
+- API_URL: String 
+--
++ get_valhalla_route(start: List[float], end: List[float], filename: str 
+--
+Responsibilities
+-- Récupérer un itinéraire pédestre entre deux points 
+-- Générer et corriger un fichier GeoJSON contenant le trajet 
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>258</x>
+      <y>138</y>
+      <w>174</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;120.0;270.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>414</x>
+      <y>138</y>
+      <w>84</w>
+      <h>84</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>120.0;120.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>234</x>
+      <y>378</y>
+      <w>18</w>
+      <h>150</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;230.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>414</x>
+      <y>138</y>
+      <w>336</w>
+      <h>120</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>540.0;180.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>240</x>
+      <y>366</y>
+      <w>246</w>
+      <h>168</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>390.0;10.0;10.0;260.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>330</x>
+      <y>294</y>
+      <w>90</w>
+      <h>30</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=n
+teaches to &gt;</panel_attributes>
+    <additional_attributes>10.0;20.0;130.0;20.0</additional_attributes>
+  </element>
+</diagram>
