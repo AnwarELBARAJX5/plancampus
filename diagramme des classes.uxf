@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram program="umlet" version="15.1">
-  <zoom_level>6</zoom_level>
+  <zoom_level>5</zoom_level>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>168</x>
-      <y>210</y>
-      <w>168</w>
-      <h>174</h>
+      <x>255</x>
+      <y>215</y>
+      <w>140</w>
+      <h>165</h>
     </coordinates>
-    <panel_attributes>&lt;&lt;Service&gt;&gt;
-Database::DatabaseManager
+    <panel_attributes>DatabaseManager
 {
   - Gère la connexion à SQLite
   - Crée et manipule les tables Batiment et Etage
@@ -37,13 +36,12 @@ Interagir avec la classe Batiment</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>60</x>
-      <y>516</y>
-      <w>342</w>
-      <h>132</h>
+      <x>165</x>
+      <y>490</y>
+      <w>285</w>
+      <h>110</h>
     </coordinates>
-    <panel_attributes>&lt;&lt;DataInitializer&gt;&gt;
-Database::DatabaseGenerator
+    <panel_attributes>DatabaseGenerator
 
 --
  - dico_adresse: Dict[str, str]
@@ -61,13 +59,12 @@ Responsibilities
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>414</x>
-      <y>210</y>
-      <w>156</w>
-      <h>162</h>
+      <x>460</x>
+      <y>235</y>
+      <w>130</w>
+      <h>135</h>
     </coordinates>
-    <panel_attributes>&lt;&lt;Entity&gt;&gt;
-Infrastructure::Batiment
+    <panel_attributes>Batiment
 --
   - numBat: int 
   - salleParetage: List[int] 
@@ -89,13 +86,12 @@ Responsibilities
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>288</x>
-      <y>0</y>
-      <w>252</w>
-      <h>144</h>
+      <x>355</x>
+      <y>60</y>
+      <w>210</w>
+      <h>120</h>
     </coordinates>
-    <panel_attributes>&lt;&lt;UIController&gt;&gt;
-Application::Main
+    <panel_attributes>Main
 --
 - mapview: MapView
 - geojson_layers: List[GeoJsonMapLayer]
@@ -115,13 +111,12 @@ Responsibilities
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>588</x>
-      <y>246</y>
-      <w>306</w>
-      <h>114</h>
+      <x>605</x>
+      <y>265</y>
+      <w>255</w>
+      <h>65</h>
     </coordinates>
-    <panel_attributes>&lt;&lt;Service&gt;&gt;
-Routing::ValhallaRouteService
+    <panel_attributes>ValhallaRouteService
 --
 - API_URL: String 
 --
@@ -136,21 +131,21 @@ Responsibilities
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>258</x>
-      <y>138</y>
-      <w>174</w>
-      <h>84</h>
+      <x>330</x>
+      <y>175</y>
+      <w>145</w>
+      <h>50</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>10.0;120.0;270.0;10.0</additional_attributes>
+    <additional_attributes>10.0;80.0;270.0;10.0</additional_attributes>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>414</x>
-      <y>138</y>
-      <w>84</w>
-      <h>84</h>
+      <x>460</x>
+      <y>175</y>
+      <w>70</w>
+      <h>70</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;.</panel_attributes>
     <additional_attributes>120.0;120.0;10.0;10.0</additional_attributes>
@@ -158,48 +153,51 @@ Responsibilities
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>234</x>
-      <y>378</y>
-      <w>18</w>
-      <h>150</h>
+      <x>320</x>
+      <y>365</y>
+      <w>200</w>
+      <h>135</h>
     </coordinates>
     <panel_attributes>lt=&lt;&lt;.</panel_attributes>
+    <additional_attributes>380.0;10.0;10.0;250.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>390</x>
+      <y>305</y>
+      <w>75</w>
+      <h>25</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=n
+stocke les batiments</panel_attributes>
+    <additional_attributes>10.0;20.0;130.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>315</x>
+      <y>375</y>
+      <w>80</w>
+      <h>125</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=n
+génére les batiments</panel_attributes>
     <additional_attributes>10.0;10.0;10.0;230.0</additional_attributes>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>414</x>
-      <y>138</y>
-      <w>336</w>
-      <h>120</h>
+      <x>460</x>
+      <y>175</y>
+      <w>275</w>
+      <h>100</h>
     </coordinates>
-    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>540.0;180.0;10.0;10.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>240</x>
-      <y>366</y>
-      <w>246</w>
-      <h>168</h>
-    </coordinates>
-    <panel_attributes>lt=&lt;&lt;.</panel_attributes>
-    <additional_attributes>390.0;10.0;10.0;260.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>330</x>
-      <y>294</y>
-      <w>90</w>
-      <h>30</h>
-    </coordinates>
-    <panel_attributes>lt=-
-m1=1
-m2=n
-teaches to &gt;</panel_attributes>
-    <additional_attributes>10.0;20.0;130.0;20.0</additional_attributes>
+    <panel_attributes>lt=&lt;&lt;&lt;-</panel_attributes>
+    <additional_attributes>530.0;180.0;10.0;10.0</additional_attributes>
   </element>
 </diagram>

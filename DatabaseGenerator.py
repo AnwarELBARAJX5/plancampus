@@ -1,34 +1,6 @@
 from DatabaseManager import *
 import sqlite3
-
-generer_salles_batiment(15, [0,0, 8, 2, 13, 5],[0,1,  1, 12, 1,9])
-generer_salles_batiment(5, [13,0, 13, 6],[1, 0, 1, 5])
-generer_salles_batiment(7, [5,0, 7, 2],[1, 0, 0, 0]) #salle 7-05? manquante
-generer_salles_batiment(6, [5],[0])
-generer_salles_batiment(3, [2],[1])#salle 3-05? manquante
-generer_salles_batiment(1, [],[])
-generer_salles_batiment(8, [2],[1])
-generer_salles_batiment(9, [1],[2]) #salle 9-05? manquante
-generer_salles_batiment(14,[10,28,13],[1,0,0])
-generer_salles_batiment(2,[],[])
-generer_salles_batiment(13,[],[])
-generer_salles_batiment(16,[],[])
-generer_salles_batiment(17,[],[])
-
-ajouter_salles(7,["7-051","7-050"])
-ajouter_salles(6,["Bibliotèque Universitaire"])
-ajouter_salles(2,["Grand Amphi"])
-ajouter_salles(3,["3-050","3-051","3-052"])
-ajouter_salles(5,["Amphi Fabry","Amphi Perès","Amphi Marion","Amphi Lavoisier"])
-ajouter_salles(8,["Amphi Sciences Naturelles"])
-ajouter_salles(9,["Amphi Charve","9-051","9-050"])
-ajouter_salles(7,["Amphi Massiani"])
-ajouter_salles(13,["Gymnase"])
-ajouter_salles(16,["Restaurant Universitaire"])
-ajouter_salles(17,["Cité Universitaire"])
-
-
-dico_adresse = {
+dic= {
     "bat1":"43.304915, 5.378867",
     "bat2": "43.305159, 5.378041",
     "bat3": "43.305403, 5.378269",
@@ -54,49 +26,48 @@ dico_adresse = {
     "Amphi Peres": "43.305631, 5.377593",
     "Amphi Marion": "43.305739, 5.377810",
     "Amphi Lavoisier": "43.305871, 5.378124",
-    "Salle 7-050": "43.305604, 5.379854",
-    "Salle 7-051": "43.305567, 5.379886",
-    "Salle 6-001":"43.304606, 5.377008",
+    "Gymnase": "43.306117, 5.377574",
+    "Restaurant Universitaire": "43.306377, 5.378258",
+    "Cité Universitaire": "43.306390, 5.378344",
+    "9-051": "43.305217, 5.379457",
+    "9-050": "43.305217, 5.379457",
+    "7-051": "43.305604, 5.379854",
+    "7-051": "43.305567, 5.379886",
+    "6-001":"43.304606, 5.377008",
+    "3-050": "43.305403, 5.378269",
+    "3-051": "43.305403, 5.378269",
+    "3-052": "43.305403, 5.378269",
 }
+generer_salles_batiment(15, [0,0, 8, 2, 13, 5],dic,[0,1,  1, 12, 1,9])
+generer_salles_batiment(5, [13,0, 13, 6],dic,[1, 0, 1, 5])
+generer_salles_batiment(7, [5,0, 7, 2],dic,[1, 0, 0, 0]) #salle 7-05? manquante
+generer_salles_batiment(6, [5],dic,[0])
+generer_salles_batiment(3, [2],dic,[1])#salle 3-05? manquante
+generer_salles_batiment(1, [],dic,[])
+generer_salles_batiment(8, [2],dic,[1])
+generer_salles_batiment(9, [1],dic,[2]) #salle 9-05? manquante
+generer_salles_batiment(14,[10,28,13],dic,[1,0,0])
+generer_salles_batiment(2,[],dic,[])
+generer_salles_batiment(13,[],dic,[])
+generer_salles_batiment(16,[],dic,[])
+generer_salles_batiment(17,[],dic,[])
 
-def extract_adresse(dic, numbat):
-    """Récupère la longitude et latitude d'un bâtiment à partir du dictionnaire."""
-    
-    # Convertir le numéro de bâtiment en format "batX" -> X
-    key = f"bat{numbat}"  # Si numbat = 2, key devient "bat2"
-    
-    if key in dic:  # Vérifie si la clé existe
-        lon, lat = map(float, dic[key].split(", "))  # Sépare et convertit en float
-        return [lon, lat]  # Retourne les coordonnées
-    
-    return None  # Retourne None si le bâtiment n'existe pas
+ajouter_salles(7,["7-051","7-050","Amphi Massiani"],dic)
+ajouter_salles(6,["Bibliotèque Universitaire"],dic)
+ajouter_salles(2,["Grand Amphi"],dic)
+ajouter_salles(3,["3-050","3-051","3-052"],dic)
+ajouter_salles(5,["Amphi Fabry","Amphi Peres","Amphi Marion","Amphi Lavoisier"],dic)
+ajouter_salles(8,["Amphi Sciences Naturelles"],dic)
+ajouter_salles(9,["Amphi Charve","9-051","9-050"],dic)
+ajouter_salles(13,["Gymnase"],dic)
+ajouter_salles(16,["Restaurant Universitaire"],dic)
+ajouter_salles(17,["Cité Universitaire"],dic)
 
-def inserer_adresses_bdd(dic):
-    """Ajoute ou met à jour les adresses (longitude, latitude) des bâtiments dans la base de données."""
 
-    conn = sqlite3.connect("batiments.db")  # Connexion à la base
-    cursor = conn.cursor()
 
-    for numbat in range(1, 16):  # On suppose que les bâtiments vont de 1 à 15
-        coords = extract_adresse(dic, numbat)  # Récupérer les coordonnées [long, lat]
-        
-        if coords:
-            lon, lat = coords
-            
-            # Mise à jour des coordonnées GPS dans la base
-            cursor.execute("""
-                UPDATE Batiment 
-                SET long = ?, lat = ?
-                WHERE numbat = ?
-            """, (lon, lat, numbat))
-    
-    conn.commit()  # Valider les modifications
-    conn.close()   # Fermer la connexion
-    
-    print("Mise à jour des adresses effectuée avec succès !")
 
 
 # Exécuter la mise à jour dans la base de données
-inserer_adresses_bdd(dico_adresse)
+#inserer_adresses_bdd(dic)
 
 
