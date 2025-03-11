@@ -116,7 +116,7 @@ class Main(MDApp):
 
         cursor.execute("SELECT numsalle FROM Etage WHERE LOWER(numsalle) LIKE ?", (query,))
         results += cursor.fetchall()
-
+        
         db.close()
 
         # 🔹 Création des suggestions

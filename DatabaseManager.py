@@ -212,20 +212,25 @@ def inserer_adresses_bdd(dic):
 def get_location_from_db(name):
     """
     Récupère la latitude et la longitude d'un bâtiment ou d'une salle depuis la base de données.
-    :param name: Nom du bâtiment ou numéro de salle (ex: "bat7", "7-051").
+    :param name: Nom du bâtiment, numéro du bâtiment ou numéro de salle (ex: "bat7", "7-051", "Bibliothèque").
     :return: (longitude, latitude) ou None si non trouvé.
     """
     conn = sqlite3.connect("batiments.db")
     cursor = conn.cursor()
 
-    # 🔹 Vérifier si c'est un bâtiment
+    # 🔹 Vérifier si c'est un **numéro de bâtiment**
     cursor.execute("SELECT long, lat FROM Batiment WHERE numbat=?", (name,))
     result = cursor.fetchone()
-    
+
     if not result:
-        # 🔹 Vérifier si c'est une salle
+        # 🔹 Vérifier si c'est un **nom de bâtiment** (ex: "Bibliothèque")
+        cursor.execute("SELECT long, lat FROM Batiment WHERE LOWER(nom) = LOWER(?)", (name,))
+        result = cursor.fetchone()
+
+    if not result:
+        # 🔹 Vérifier si c'est une **salle**
         cursor.execute("SELECT long, lat FROM Etage WHERE numsalle=?", (name,))
         result = cursor.fetchone()
 
     conn.close()
-    return (result[1], result[0]) if result else None # Retourne (longitude, latitude) ou None si non trouvé
+    return (result[1], result[0]) if result else None

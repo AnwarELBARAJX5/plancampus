@@ -46,7 +46,11 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
         encoded_polyline = route["trip"]["legs"][0]["shape"]
         coordinates = polyline.decode(encoded_polyline)
         corrected_coordinates = [[lon/10, lat/10] for lat, lon in coordinates]  # 🔄 Correction lat/lon
-
+        directions = [maneuver["instruction"] for leg in route["trip"]["legs"] for maneuver in leg["maneuvers"]]
+        total_distance = route["trip"]["summary"]["length"]  # Distance totale en km
+        total_duration = route["trip"]["summary"]["time"] / 60  # Temps en minutes
+        maneuvers = route["trip"]["legs"][0]["maneuvers"]
+        print(directions,total_distance,total_duration)
         # 🔹 Générer GeoJSON
         geojson_data = {
             "type": "FeatureCollection",
