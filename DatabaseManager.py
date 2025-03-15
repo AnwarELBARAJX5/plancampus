@@ -20,7 +20,8 @@ class DatabaseManager:
                 nom TEXT,
                 nbetage INTEGER,
                 long NUMERIC,
-                lat NUMERIC
+                lat NUMERIC,
+                geojson_path TEXT
             )
         ''')
 
@@ -64,6 +65,18 @@ class DatabaseManager:
         """Ferme la connexion à la base de données."""
         if self.conn:
             self.conn.close()
+    
+    def insert_geojson_path(self, numbat, geojson_path):
+            """Ajoute ou met à jour le chemin GeoJSON d'un bâtiment."""
+            self.connect()
+            self.cursor.execute("""
+                UPDATE Batiment 
+                SET geojson_path = ? 
+                WHERE numbat = ?
+                """, (geojson_path, numbat))
+            self.conn.commit()
+            self.conn.close()
+            print(f"✅ Chemin GeoJSON ajouté : {geojson_path} pour bâtiment {numbat}")
 
 # Fonction externe pour générer et afficher les salles d'un bâtiment et les insérer dans la base de données
 def generer_salles_batiment(numBat, salleParetage, dic,indices_depart=None):
@@ -165,12 +178,6 @@ def salle_adresse(salle):
     conn.close()
     return result[0] if result else None  
 
-"""def  ajouter_adress(key,adress){
-    conn = sqlite3.connect("batiments.db")
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO Batiments(numbat, numsalle) VALUES (?, ?)", (numbat, salle))
-    
-}"""
 
 def extract_adresse(dic, numbat):
     """Récupère la longitude et latitude d'un bâtiment à partir du dictionnaire."""

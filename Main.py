@@ -73,28 +73,46 @@ class Main(MDApp):
         self.current_menu = None  # Stocker le menu actif
 
         # 📌 Charger les fichiers GeoJSON des bâtiments
-        self.load_geojson_layers("batgeojson")
+    
 
         # 📌 Animation clignotante pour les bâtiments
         Clock.schedule_interval(self.toggle_opacity, 0.5)
 
         return self.screen
+    
+    def load_geojson_layers(self, numbat):
+        """Affiche uniquement le bâtiment de destination sur la carte."""
 
-    def load_geojson_layers(self, directory):
-        """Charge tous les fichiers GeoJSON d'un dossier."""
-        path = os.path.join(os.getcwd(), directory)
-        if not os.path.exists(path):
-            print(f"⚠️ Dossier introuvable : {directory}")
-            return
+        # 🔹 Supprimer les anciens bâtiments affichés
+        for layer in self.geojson_layers:
+            self.mapview.remove_widget(layer)
+        self.geojson_layers.clear()
 
-        files = [f for f in os.listdir(path) if f.endswith('.geojson')]
-        for file in files:
-            geojson_file = os.path.join(path, file)
-            geojson_layer = GeoJsonMapLayer(source=geojson_file)
-            geojson_layer.opacity = 1
-            self.mapview.add_widget(geojson_layer)
-            self.geojson_layers.append(geojson_layer)
+        # 🔹 Connexion à la base de données pour récupérer le chemin GeoJSON
+        db = DatabaseManager.DatabaseManager()
+        db.connect()
+        cursor = db.cursor
 
+        cursor.execute("SELECT geojson_path FROM Batiment WHERE numbat = ?", (numbat,))
+        result = cursor.fetchone()
+
+        db.close()
+
+        if result and result[0]:  # Si un chemin GeoJSON est trouvé
+            geojson_path = os.path.join(os.getcwd(), result[0])  # Ajout du chemin absolu
+
+            if os.path.exists(geojson_path):
+                geojson_layer = GeoJsonMapLayer(source=geojson_path)
+                geojson_layer.opacity = 1  # Assurer la visibilité
+                self.mapview.add_widget(geojson_layer)
+                self.geojson_layers.append(geojson_layer)
+                print(f"✅ Bâtiment {numbat} affiché depuis {geojson_path}.")
+            else:
+                print(f"⚠️ Le fichier GeoJSON {geojson_path} n'existe pas.")
+        else:
+            print(f"⚠️ Aucun fichier GeoJSON trouvé en base pour le bâtiment {numbat}.")
+
+    
     def toggle_opacity(self, dt):
         """Alterner l’opacité entre 0 et 1 pour chaque bâtiment GeoJSON."""
         for layer in self.geojson_layers:
@@ -178,6 +196,32 @@ class Main(MDApp):
         start = [start_location[0], start_location[1]]
         end = [end_location[0], end_location[1]]
 
+
+    # 🔹 Extraire le **numéro de bâtiment de destination**
+        destination_batiment = None
+
+        if end_text.lower().startswith("bâtiment"):
+            try:
+                destination_batiment = int(end_text.replace("Bâtiment", "").strip())
+            except ValueError:
+                print(f"⚠️ Impossible d'extraire le numéro de bâtiment depuis '{end_text}'.")
+        
+        elif end_text.lower().startswith("bat"):
+            try:
+                destination_batiment = int(end_text.replace("bat", "").strip())
+            except ValueError:
+                print(f"⚠️ Impossible d'extraire le numéro de bâtiment depuis '{end_text}'.")
+
+        if destination_batiment:
+            print(f"📌 Bâtiment destination détecté : {destination_batiment}")
+            self.load_geojson_layers(destination_batiment)
+            Clock.schedule_once(self.mapview.do_update, 0)
+
+                                              # ✅ Affichage du bâtiment
+
+        else:
+            print(f"⚠️ Aucun bâtiment détecté pour '{end_text}', pas d'affichage.")
+      
         # 🔹 Générer l'itinéraire avec Valhalla
         path = os.path.join(os.getcwd(), "batgeojson")
         filename = os.path.join(path, "itineraire_valhalla.geojson")

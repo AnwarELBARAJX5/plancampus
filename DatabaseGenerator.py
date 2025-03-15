@@ -1,5 +1,7 @@
 from DatabaseManager import *
 import sqlite3
+import os
+from DatabaseManager import DatabaseManager
 dic= {
     "bat1":"43.304915, 5.378867",
     "bat2": "43.305159, 5.378041",
@@ -13,7 +15,7 @@ dic= {
     "bat14": "43.304786, 5.376601",
     "bat15": "43.306456, 5.379339",
     "Bibliotèque Universitaire": "43.304938, 5.377534",
-    "Cafe": "43.305260, 5.377628",
+    "Cafétaria": "43.305260, 5.377628",
     "bat16": "43.306377, 5.378258",#ru
     "bat17": "43.306390, 5.378344",#CITE U
     "Grand Amphi": "43.305204, 5.378089",
@@ -51,6 +53,7 @@ generer_salles_batiment(2,[],dic,[])
 generer_salles_batiment(13,[],dic,[])
 generer_salles_batiment(16,[],dic,[])
 generer_salles_batiment(17,[],dic,[])
+generer_salles_batiment(18,[],dic,[])
 
 ajouter_salles(7,["7-051","7-050","Amphi Massiani"],dic)
 ajouter_salles(6,["Bibliotèque Universitaire"],dic)
@@ -62,7 +65,7 @@ ajouter_salles(9,["Amphi Charve","9-051","9-050"],dic)
 ajouter_salles(13,["Gymnase"],dic)
 ajouter_salles(16,["Restaurant Universitaire"],dic)
 ajouter_salles(17,["Cité Universitaire"],dic)
-
+ajouter_salles(18,["Cafétaria"],dic)
 
 
 
@@ -71,3 +74,23 @@ ajouter_salles(17,["Cité Universitaire"],dic)
 #inserer_adresses_bdd(dic)
 
 
+
+db = DatabaseManager()
+geojson_folder = "batgeojson"
+
+for filename in os.listdir(geojson_folder):
+    if filename.endswith(".geojson"):
+        try:
+            # ✅ Extraire le numéro du bâtiment correctement
+            numbat = filename.replace("bat", "").replace(".geojson", "")  # Ex: "bat7.geojson" → "7"
+            numbat = int(numbat)  # ✅ Convertir en entier
+            
+            # ✅ Construire le chemin complet du fichier
+            geojson_path = os.path.join(geojson_folder, filename)
+            
+            # ✅ Insérer le chemin dans la base
+            db.insert_geojson_path(numbat, geojson_path)
+            print(f"✅ Fichier ajouté : {geojson_path} → Bâtiment {numbat}")
+
+        except ValueError:
+            print(f"⚠️ Fichier ignoré : {filename} (nom non valide)")
