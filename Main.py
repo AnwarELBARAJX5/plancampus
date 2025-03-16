@@ -11,11 +11,11 @@ import os
 import DatabaseManager
 import itineraire
 from kivymd.uix.menu import MDDropdownMenu
+from kivymd.uix.list import OneLineListItem
 import sqlite3
 
 # 📌 Interface utilisateur
-KV = """
-BoxLayout:
+KV = """BoxLayout:
     orientation: 'vertical'
     
     MDTopAppBar:
@@ -27,33 +27,38 @@ BoxLayout:
         lat: 43.305446
         lon: 5.377284
         zoom: 18
-        size_hint: 1, 1  
+        size_hint: 1, 0.45  # 📌 Encore un peu plus petit pour laisser de la place
+
+    ScrollView:
+        size_hint_y: 0.3  # 📌 Augmente la hauteur de la liste des directions
+        MDList:
+            id: directions_list
 
     BoxLayout:
         orientation: 'vertical'
-        size_hint_y: 0.2  
+        size_hint_y: 0.25  # 📌 Augmenter la hauteur du champ de saisie pour équilibrer
         padding: 10
         spacing: 5
 
-    MDTextField:
-        id: start_location
-        hint_text: "Point de départ (bâtiment, salle ou coordonnées)"
-        mode: "rectangle"
-        on_text: app.show_suggestions(self.text, "start")
+        MDTextField:
+            id: start_location
+            hint_text: "Point de départ (bâtiment, salle ou coordonnées)"
+            mode: "rectangle"
+            on_text: app.show_suggestions(self.text, "start")
 
-    MDTextField:
-        id: end_location
-        hint_text: "Destination (bâtiment, salle ou coordonnées)"
-        mode: "rectangle"
-        on_text: app.show_suggestions(self.text, "end")
+        MDTextField:
+            id: end_location
+            hint_text: "Destination (bâtiment, salle ou coordonnées)"
+            mode: "rectangle"
+            on_text: app.show_suggestions(self.text, "end")
 
-    Button:
-        text: "Trouver l'itinéraire"
-        size_hint_y: None
-        height: 40
-        on_release: app.calculate_route()
+        Button:
+            text: "Trouver l'itinéraire"
+            size_hint_y: None
+            height: 40
+            on_release: app.calculate_route()
+
 """
-
 class Main(MDApp):
     def build(self):
         # 🔹 Supprimer l'ancien itinéraire au démarrage
@@ -177,6 +182,8 @@ class Main(MDApp):
         self.current_menu = None  # Réinitialiser après fermeture
 
     def calculate_route(self):
+        """Calcule et affiche l'itinéraire en fonction des entrées de l'utilisateur."""
+        
         start_text = self.screen.ids.start_location.text.strip()
         end_text = self.screen.ids.end_location.text.strip()
 
@@ -196,8 +203,7 @@ class Main(MDApp):
         start = [start_location[0], start_location[1]]
         end = [end_location[0], end_location[1]]
 
-
-    # 🔹 Extraire le **numéro de bâtiment de destination**
+        # 🔹 Détecter si l'utilisateur a entré un bâtiment ou une salle
         destination_batiment = None
 
         if end_text.lower().startswith("bâtiment"):
@@ -212,23 +218,52 @@ class Main(MDApp):
             except ValueError:
                 print(f"⚠️ Impossible d'extraire le numéro de bâtiment depuis '{end_text}'.")
 
+        else:
+            # 🔹 Si l'utilisateur a entré une salle, récupérer son bâtiment
+            db = DatabaseManager.DatabaseManager()
+            db.connect()
+            cursor = db.cursor
+
+            cursor.execute("SELECT numbat FROM Etage WHERE numsalle = ?", (end_text,))
+            result = cursor.fetchone()
+
+            db.close()
+
+            if result:
+                destination_batiment = result[0]  
+                print(f"📌 La salle '{end_text}' appartient au bâtiment {destination_batiment}.")
+            else:
+                print(f"⚠️ Salle '{end_text}' introuvable dans la base de données.")
+
+        # 🔹 Afficher le bâtiment destination s'il est trouvé
         if destination_batiment:
             print(f"📌 Bâtiment destination détecté : {destination_batiment}")
             self.load_geojson_layers(destination_batiment)
-            Clock.schedule_once(self.mapview.do_update, 0)
-
-                                              # ✅ Affichage du bâtiment
-
+            Clock.schedule_once(self.mapview.do_update, 0) # ✅ Rafraîchissement de la carte
         else:
             print(f"⚠️ Aucun bâtiment détecté pour '{end_text}', pas d'affichage.")
-      
+
         # 🔹 Générer l'itinéraire avec Valhalla
         path = os.path.join(os.getcwd(), "batgeojson")
         filename = os.path.join(path, "itineraire_valhalla.geojson")
-        itineraire.get_valhalla_route(start, end, filename)
+        
+        route_data = itineraire.get_valhalla_route(start, end, filename)
 
-        # 🔹 Afficher la route sur la carte
-        self.add_route_to_map(filename)
+        if route_data:
+            directions = route_data["directions"]
+            total_distance = route_data["distance"]
+            total_duration = route_data["duration"]
+
+            print(f"✅ Distance : {total_distance} km, Durée : {total_duration:.2f} min")
+            print("📌 Étapes du trajet :", directions)
+
+            # 🔹 Affichage dynamique des instructions sur l'écran
+            self.display_directions(directions, total_distance, total_duration)
+
+            # 🔹 Afficher la route sur la carte
+            self.add_route_to_map(filename)
+        else:
+            print("❌ Échec de récupération de l'itinéraire.")
 
     def add_route_to_map(self, geojson_file):
         """Ajoute un itinéraire GeoJSON à la carte en supprimant l'ancien s'il existe"""
@@ -245,6 +280,25 @@ class Main(MDApp):
             print("✅ Itinéraire ajouté sur la carte")
         else:
             print(f"⚠️ Erreur : fichier GeoJSON introuvable ({geojson_file})")
+        
+    def display_directions(self, directions, total_distance, total_duration):
+        """Affiche dynamiquement les instructions de navigation."""
+        directions_list = self.screen.ids.directions_list
+        directions_list.clear_widgets()  # Nettoyer les anciennes instructions
+
+        print("📌 Mise à jour des étapes de l'itinéraire...")
+
+        # 🔹 Ajouter la distance et la durée en haut de la liste
+        directions_list.add_widget(OneLineListItem(text=f"Distance : {total_distance:.2f} km"))
+        directions_list.add_widget(OneLineListItem(text=f"Durée estimée : {total_duration:.2f} min"))
+
+        # 🔹 Ajouter chaque instruction
+        for step in directions:
+            print(f"Ajout de l'étape : {step}")  # 🔹 Debugging
+            directions_list.add_widget(OneLineListItem(text=step))
+
+        print("✅ Instructions mises à jour dans l'interface.")
+
 
 if __name__ == "__main__":
     Main().run()

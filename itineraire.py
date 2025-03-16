@@ -75,7 +75,12 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
             json.dump(geojson_data, f, indent=2)
 
         print(f"✅ Fichier '{filename}' créé et corrigé avec succès !")
-        return geojson_data  
+        return {
+            "geojson": geojson_data,
+            "directions": directions,
+            "distance": total_distance,
+            "duration": total_duration
+        }  
 
     else:
         print("❌ Erreur API :", response.text)
