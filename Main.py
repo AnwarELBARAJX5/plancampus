@@ -47,7 +47,19 @@ ScreenManager:
         MDTopAppBar:
             title: 'Carte Kivy'
             size_hint_y: 0.1  
+        MDTextField:
+            id: search_field
+            hint_text: "Rechercher un bâtiment..."
+            mode: "rectangle"
+            size_hint_x: 0.8
+            pos_hint: {"center_y": 0.5}
+            on_text: app.show_suggestions_search(self.text)
 
+        MDRaisedButton:
+            text: "Confirmer"
+            size_hint_x: 0.2
+            pos_hint: {"center_y": 0.5}
+            on_release: app.show_suggestions_search(app.main_screen.ids.search_field.text, confirm=True)
         MapView:
             id: mapview
             lat: 43.305446
@@ -301,5 +313,59 @@ class Main(MDApp):
             directions_list.add_widget(OneLineListItem(text=step))
         print("✅ Instructions mises à jour dans l'interface.")
 
+    def show_suggestions_search(self, text, confirm=False):
+        """Affiche les suggestions et affiche directement le bâtiment si confirmé."""
+        if not text:
+            return  # Ne rien faire si l'entrée est vide
+
+        db = DatabaseManager.DatabaseManager()
+        db.connect()
+        cursor = db.cursor
+
+        # 🔍 Recherche des bâtiments correspondant au texte saisi
+        query = f"%{text.lower()}%"
+        cursor.execute("SELECT numbat, nom FROM Batiment WHERE LOWER(nom) LIKE ?", (query,))
+        results = cursor.fetchall()
+        db.close()
+
+        if not results:
+            return  # Aucun résultat trouvé
+
+        # **Si l'utilisateur a appuyé sur "Confirmer", afficher directement**
+        if confirm:
+            selected_building = results[0][0]  # Prend le premier résultat
+            print(f"✅ Confirmation du bâtiment {selected_building}")
+
+            # 🔹 Afficher le bâtiment et activer le clignotement
+            self.load_geojson_layers(selected_building)
+            Clock.schedule_interval(self.toggle_opacity, 0.5)
+            Clock.schedule_once(self.mapview.do_update, 1)
+
+            return
+
+        # **Sinon, afficher les suggestions**
+        if hasattr(self, "search_menu") and self.search_menu:
+            self.search_menu.dismiss()
+
+        self.search_menu = MDDropdownMenu(
+            caller=self.main_screen.ids.search_field,
+            items=[
+                {
+                    "text": f"{result[1]} (Bâtiment {result[0]})",
+                    "on_release": lambda x=result: self.select_building(x)
+                }
+                for result in results
+            ],
+            width_mult=4
+        )
+
+        self.search_menu.open()
+
+    def select_building(self, result):
+        """Sélectionne un bâtiment et met le texte dans le champ de recherche."""
+        self.main_screen.ids.search_field.text = result[1]  # Insère le nom dans la barre
+        self.search_menu.dismiss()
+
+        
 if __name__ == "__main__":
     Main().run()
