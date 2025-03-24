@@ -14,12 +14,13 @@ import itineraire
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineListItem
 import sqlite3
-
+from plyer import gps
 # KV string intégrant un écran de chargement et l'écran principal
 KV = '''
 ScreenManager:
     LoadingScreen:
-    MainScreen:
+    SecondScreen:  # Maintenant, l'écran de recherche est l'écran principal
+    MainScreen:  # Contient l'itinéraire
 
 <LoadingScreen>:
     name: 'loading'
@@ -37,29 +38,69 @@ ScreenManager:
             size: 250, 250
             pos_hint: {"center_x": 0.5, "center_y": 0.6}
 
-       
-
-<MainScreen>:
-    name: 'main'
+<SecondScreen>: 
+    name: 'search'
     BoxLayout:
         orientation: 'vertical'
         
+        
         MDTopAppBar:
-            title: 'Carte Kivy'
+            title: 'Plan Campus Saint-Charles'
             size_hint_y: 0.1  
+            md_bg_color: 0.172, 0.216, 0.318, 1
+            right_action_items: [["map", lambda x: app.switch_to_main()]]  # Bouton "Vous êtes perdu ?"
+            
         MDTextField:
             id: search_field
             hint_text: "Rechercher un bâtiment..."
             mode: "rectangle"
-            size_hint_x: 0.8
+            size_hint_x: 0.7
             pos_hint: {"center_y": 0.5}
             on_text: app.show_suggestions_search(self.text)
 
         MDRaisedButton:
             text: "Confirmer"
-            size_hint_x: 0.2
-            pos_hint: {"center_y": 0.5}
-            on_release: app.show_suggestions_search(app.main_screen.ids.search_field.text, confirm=True)
+            size_hint_x: 0.3
+            md_bg_color: 0.172, 0.216, 0.318, 1
+            on_release: app.show_suggestions_search(app.screen_manager.get_screen('search').ids.search_field.text, confirm=True)
+
+        MapView:
+            id: mapview_search
+            lat: 43.305446
+            lon: 5.377284
+            zoom: 18
+            size_hint: 1, 0.45
+        
+        MDFillRoundFlatButton:
+            text: "VOUS ÊTES PERDU ?"
+            size_hint_x: 1
+            md_bg_color: 0.172, 0.216, 0.318, 1  # Couleur de fond
+            text_color: 1, 1, 1, 1  # Texte blanc
+            font_size: "16sp"
+            theme_text_color: "Custom"
+            valign: "center"
+            halign: "left"
+            padding: [dp(15), 0, 0, 0]  # Ajuste l'espace pour l'icône à droite
+            on_release: app.switch_to_main()
+            on_release: app.activate_gps()
+
+            IconRightWidget:
+                icon: "navigation"  # Icône de localisation
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1  # Icône en blanc
+                pos_hint: {"x": 0.9}
+
+<MainScreen>:  # L'écran de l'itinéraire devient secondaire
+    name: 'main'
+    BoxLayout:
+        orientation: 'vertical'
+        
+        MDTopAppBar:
+            title: 'VOUS ÊTES PERDU ?'
+            size_hint_y: 0.1  
+            md_bg_color: 0.172, 0.216, 0.318, 1
+            left_action_items: [["arrow-left", lambda x: app.switch_to_search()]]  # Bouton retour
+
         MapView:
             id: mapview
             lat: 43.305446
@@ -90,11 +131,12 @@ ScreenManager:
                 mode: "rectangle"
                 on_text: app.show_suggestions(self.text, "end")
 
-            Button:
+            MDRaisedButton:
                 text: "Trouver l'itinéraire"
                 size_hint_y: None
                 height: 40
                 on_release: app.calculate_route()
+
 '''
 
 # Définir les écrans comme des classes (optionnel, mais utile pour des personnalisations futures)
@@ -103,46 +145,43 @@ class LoadingScreen(Screen):
 
 class MainScreen(Screen):
     pass
-
+class SecondScreen(Screen):
+    pass
 class Main(MDApp):
     def build(self):
         # 🔹 Supprimer l'ancien itinéraire au démarrage
-        route_file = os.path.join(os.getcwd(), "batgeojson/itineraire_valhalla.geojson")
-        if os.path.exists(route_file):
-            os.remove(route_file)
-            print("🗑 Ancien itinéraire supprimé au démarrage.")
-        
-        # Charger le ScreenManager depuis la KV string
         self.screen_manager = Builder.load_string(KV)
         
-        # Récupérer l'écran principal pour les références ultérieures
+        # Récupérer les écrans modifiés
+        self.search_screen = self.screen_manager.get_screen('search')
         self.main_screen = self.screen_manager.get_screen('main')
+
+        self.mapview_search = self.search_screen.ids.mapview_search
         self.mapview = self.main_screen.ids.mapview
-        self.geojson_layers = []  
+        self.geojson_layers = [] 
+        self.current_menu = None 
         self.route_layer = None
-
-        # Gestion des menus de suggestions
-        self.menu_start = None
-        self.menu_end = None
-        self.current_menu = None  # Stocker le menu actif
-
-        # Animation clignotante pour les bâtiments
-        Clock.schedule_interval(self.toggle_opacity, 0.5)
-        
-        # Après quelques secondes, passer de l'écran de chargement à l'écran principal
-        Clock.schedule_once(self.switch_to_main, 5)
+        Clock.schedule_once(self.switch_to_search, 5)  # Commencer avec l'écran de recherche
         
         return self.screen_manager
     
-    def switch_to_main(self, dt):
+    def switch_to_main(self, dt=None):
+        """🔹 Passer à l'écran de l'itinéraire"""
         self.screen_manager.current = 'main'
-        print("✅ Passage à l'écran principal.")
 
-    def load_geojson_layers(self, numbat):
-        """Affiche uniquement le bâtiment de destination sur la carte."""
+    def switch_to_search(self, dt=None):
+        """🔹 Revenir à l'écran de recherche"""
+        self.screen_manager.current = 'search'
+
+    def load_geojson_layers(self, numbat, mapview):
+        """Affiche le bâtiment recherché sur la bonne carte"""
+        
+        # ✅ Vérifier si la couche existe avant de la supprimer
         for layer in self.geojson_layers:
-            self.mapview.remove_widget(layer)
-        self.geojson_layers.clear()
+            if layer in mapview.children:  # 🔹 Vérifie si `layer` est bien dans `mapview`
+                mapview.remove_widget(layer)
+        
+        self.geojson_layers.clear()  # ✅ Nettoyer la liste
 
         db = DatabaseManager.DatabaseManager()
         db.connect()
@@ -157,8 +196,8 @@ class Main(MDApp):
             if os.path.exists(geojson_path):
                 geojson_layer = GeoJsonMapLayer(source=geojson_path)
                 geojson_layer.opacity = 1
-                self.mapview.add_widget(geojson_layer)
-                self.geojson_layers.append(geojson_layer)
+                mapview.add_widget(geojson_layer)
+                self.geojson_layers.append(geojson_layer)  # ✅ Ajoute la couche pour éviter l'erreur
                 print(f"✅ Bâtiment {numbat} affiché depuis {geojson_path}.")
             else:
                 print(f"⚠️ Le fichier GeoJSON {geojson_path} n'existe pas.")
@@ -267,7 +306,7 @@ class Main(MDApp):
 
         if destination_batiment:
             print(f"📌 Bâtiment destination détecté : {destination_batiment}")
-            self.load_geojson_layers(destination_batiment)
+            self.load_geojson_layers(destination_batiment,self.mapview)
             Clock.schedule_once(self.mapview.do_update, 0)
         else:
             print(f"⚠️ Aucun bâtiment détecté pour '{end_text}', pas d'affichage.")
@@ -314,41 +353,36 @@ class Main(MDApp):
         print("✅ Instructions mises à jour dans l'interface.")
 
     def show_suggestions_search(self, text, confirm=False):
-        """Affiche les suggestions et affiche directement le bâtiment si confirmé."""
+        """🔍 Recherche de bâtiment"""
         if not text:
-            return  # Ne rien faire si l'entrée est vide
+            return
 
         db = DatabaseManager.DatabaseManager()
         db.connect()
         cursor = db.cursor
 
-        # 🔍 Recherche des bâtiments correspondant au texte saisi
         query = f"%{text.lower()}%"
         cursor.execute("SELECT numbat, nom FROM Batiment WHERE LOWER(nom) LIKE ?", (query,))
         results = cursor.fetchall()
         db.close()
 
         if not results:
-            return  # Aucun résultat trouvé
+            return
 
-        # **Si l'utilisateur a appuyé sur "Confirmer", afficher directement**
         if confirm:
-            selected_building = results[0][0]  # Prend le premier résultat
+            selected_building = results[0][0]
             print(f"✅ Confirmation du bâtiment {selected_building}")
 
-            # 🔹 Afficher le bâtiment et activer le clignotement
-            self.load_geojson_layers(selected_building)
-            Clock.schedule_interval(self.toggle_opacity, 0.5)
-            Clock.schedule_once(self.mapview.do_update, 1)
+            self.load_geojson_layers(selected_building, self.mapview_search)
+            Clock.schedule_once(self.mapview_search.do_update, 1)
 
             return
 
-        # **Sinon, afficher les suggestions**
         if hasattr(self, "search_menu") and self.search_menu:
             self.search_menu.dismiss()
 
         self.search_menu = MDDropdownMenu(
-            caller=self.main_screen.ids.search_field,
+            caller=self.search_screen.ids.search_field,
             items=[
                 {
                     "text": f"{result[1]} (Bâtiment {result[0]})",
@@ -361,11 +395,40 @@ class Main(MDApp):
 
         self.search_menu.open()
 
+
     def select_building(self, result):
         """Sélectionne un bâtiment et met le texte dans le champ de recherche."""
-        self.main_screen.ids.search_field.text = result[1]  # Insère le nom dans la barre
+        screen = self.screen_manager.get_screen('search')  # 📌 On prend l'écran de recherche
+        if hasattr(screen.ids, "search_field"):
+            screen.ids.search_field.text = result[1]  # ✅ Met à jour la barre de recherche
+            print(f"📌 Sélectionné : {result[1]}")
+        
         self.search_menu.dismiss()
 
+
+
+    def activate_gps(self):
+        try:
+            gps.configure(on_location=self.on_gps_location)
+            gps.start()
+            print("📡 GPS activé")
+        except NotImplementedError:
+            print("❌ GPS non disponible sur cette plateforme.")
+
+    def on_gps_location(self, **kwargs):
+        lat = kwargs['lat']
+        lon = kwargs['lon']
+        print(f"📍 Position actuelle : {lat}, {lon}")
+
+        # On injecte dans le champ start_location
+        self.main_screen.ids.start_location.text = f"{lat},{lon}"
+
+        # Tu peux aussi centrer la carte dessus
+        self.mapview.center_on(lat, lon)
         
+        # (Optionnel) ajouter un marqueur
+        marker = MapMarker(lat=lat, lon=lon)
+        self.mapview.add_marker(marker)
+
 if __name__ == "__main__":
-    Main().run()
+        Main().run()
