@@ -8,23 +8,30 @@ from kivy_garden.mapview import MapView, MapMarker
 from kivy_garden.mapview.geojson import GeoJsonMapLayer
 from kivy.clock import Clock
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivymd.uix.bottomsheet import MDCustomBottomSheet
+from kivy.uix.behaviors import ButtonBehavior
+from kivymd.uix.boxlayout import MDBoxLayout
+
 import os
 import DatabaseManager
 import itineraire
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.list import OneLineListItem
 import sqlite3
+from unidecode import unidecode
 from plyer import gps
 # KV string intégrant un écran de chargement et l'écran principal
 KV = '''
 ScreenManager:
     LoadingScreen:
-    SecondScreen:  # Maintenant, l'écran de recherche est l'écran principal
-    MainScreen:  # Contient l'itinéraire
+    SecondScreen:  # Écran principal pour la recherche
+    MainScreen:    # Écran pour l'itinéraire
+<ClickableMDBoxLayout>:
+    on_release: print("MDBoxLayout cliqué!")
+    # Ajoutez ici vos widgets enfants et propriétés
 
 <LoadingScreen>:
     name: 'loading'
-    
     MDFloatLayout:
         canvas.before:
             Color:
@@ -32,37 +39,56 @@ ScreenManager:
             Rectangle:
                 pos: self.pos
                 size: self.size
+
+        # Logo de l'application
         Image:
             source: "assets/logo.png"
             size_hint: None, None
             size: 250, 250
             pos_hint: {"center_x": 0.5, "center_y": 0.6}
 
-<SecondScreen>: 
+        # Spinner de chargement
+        MDSpinner:
+            size_hint: None, None
+            size: dp(46), dp(46)
+            pos_hint: {"center_x": 0.5, "center_y": 0.4}
+            active: True
+            determinate: False
+            color: (1, 1, 1, 1)
+
+<SecondScreen>:
     name: 'search'
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
-        
-        
+
         MDTopAppBar:
             title: 'Plan Campus Saint-Charles'
-            size_hint_y: 0.1  
+            size_hint_y: None
+            height: self.theme_cls.standard_increment
             md_bg_color: 0.172, 0.216, 0.318, 1
-            right_action_items: [["map", lambda x: app.switch_to_main()]]  # Bouton "Vous êtes perdu ?"
-            
-        MDTextField:
-            id: search_field
-            hint_text: "Rechercher un bâtiment..."
-            mode: "rectangle"
-            size_hint_x: 0.7
-            pos_hint: {"center_y": 0.5}
-            on_text: app.show_suggestions_search(self.text)
+            elevation: 4
+            right_action_items: [["map", lambda x: app.switch_to_main()]]
 
-        MDRaisedButton:
-            text: "Confirmer"
-            size_hint_x: 0.3
-            md_bg_color: 0.172, 0.216, 0.318, 1
-            on_release: app.show_suggestions_search(app.screen_manager.get_screen('search').ids.search_field.text, confirm=True)
+        # Champ + bouton "Confirmer" dans une même ligne
+        MDBoxLayout:
+            orientation: 'horizontal'
+            adaptive_height: True
+            padding: dp(10)
+            spacing: dp(10)
+
+            MDTextField:
+                id: search_field
+                hint_text: "Rechercher un bâtiment..."
+                mode: "rectangle"
+                icon_right: "magnify"
+                size_hint_x: 0.5
+                on_text: app.show_suggestions_search(self.text)
+
+            MDRaisedButton:
+                text: "Confirmer"
+                size_hint_x: 0.3
+                md_bg_color: 0.172, 0.216, 0.318, 1
+                on_release: app.show_suggestions_search(search_field.text, confirm=True)
 
         MapView:
             id: mapview_search
@@ -71,35 +97,96 @@ ScreenManager:
             zoom: 18
             size_hint: 1, 0.45
         
-        MDFillRoundFlatButton:
-            text: "VOUS ÊTES PERDU ?"
-            size_hint_x: 1
-            md_bg_color: 0.172, 0.216, 0.318, 1  # Couleur de fond
-            text_color: 1, 1, 1, 1  # Texte blanc
-            font_size: "16sp"
-            theme_text_color: "Custom"
-            valign: "center"
-            halign: "left"
-            padding: [dp(15), 0, 0, 0]  # Ajuste l'espace pour l'icône à droite
-            on_release: app.switch_to_main()
-            on_release: app.activate_gps()
-
-            IconRightWidget:
-                icon: "navigation"  # Icône de localisation
+            # Bouton "Vous êtes perdu ?"
+            MDFillRoundFlatIconButton:
+                text: "VOUS ÊTES PERDU ?"
+                size_hint_x: 1
+                md_bg_color: 0.172, 0.216, 0.318, 1
+                text_color: 1, 1, 1, 1
+                font_size: "16sp"
                 theme_text_color: "Custom"
-                text_color: 1, 1, 1, 1  # Icône en blanc
-                pos_hint: {"x": 0.9}
+                icon: "navigation"
+                pos_hint: {"center_x": 0.5}
+                padding: [20, 0]
+                on_release:
+                    app.switch_to_main()
+                    app.activate_gps()
+        MDBoxLayout:
+            size_hint_y: 0.2
+            padding: [10, 0, 10, 0]
+            MDCard:
+                elevation: 30
+                radius: [20, 20, 0, 0]
+                MDScrollView:
+                    do_scroll_y: True
+                    do_scroll_x: False
+                    MDBoxLayout:
+                        size_hint_y: 1
+                        orientation: "vertical"
+                        MDBoxLayout:
+                            size_hint_y: 0.5
+                            pos_hint:{"y":0.5}
+                            MDLabel:
+                                text:"Bienvenue dans le campus Saint-Charles"
+                                halign:"center"
+                                bold:True
+                        MDScrollView:
+                            do_scroll_y:False
+                            do_scroll_x:True
+                            MDBoxLayout:
+                                size_hint_x:1.5
+                                size_hint_y:1.2
+                                ClickableMDBoxLayout:
+                                    on_release: app.batiment_scroll("Bu")
+                                    padding:0,0,0,0
+                                    orientation:"vertical"
+                                    Image:
+                                        source:"bu.jpg"
+                                        pos_hint:{"center_x":0.5}
+                                        size: 300, 300 
 
-<MainScreen>:  # L'écran de l'itinéraire devient secondaire
+                                    MDLabel:
+                                        text:"Bibliotèque Universitaire"
+                                        font_size:20
+                                        bold:True
+                                        halign:"center"
+                                ClickableMDBoxLayout:
+                                    padding:0,0,0,0
+                                    orientation:"vertical"
+                                    on_release: app.batiment_scroll("amphi")
+                                    Image:
+                                        source:"amphisciencenaturelles.jpg"
+                                        pos_hint:{"center_x":0.5}
+                                    MDLabel:
+                                        text:"Amphi Sciences Naturelles"
+                                        font_size:20
+                                        bold:True
+                                        halign:"center"
+                                ClickableMDBoxLayout:
+                                    padding:0,0,0,0
+                                    on_release: app.batiment_scroll("bat5")
+                                    orientation:"vertical"
+                                    Image:
+                                        source:"bat5.jpg"
+                                        pos_hint:{"center_x":0.5}
+                                    MDLabel:
+                                        text:"Batiment 5"
+                                        font_size:20
+                                        bold:True
+                                        halign:"center"
+                                        
+<MainScreen>:
     name: 'main'
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
-        
+
         MDTopAppBar:
             title: 'VOUS ÊTES PERDU ?'
-            size_hint_y: 0.1  
+            size_hint_y: None
+            height: self.theme_cls.standard_increment
             md_bg_color: 0.172, 0.216, 0.318, 1
-            left_action_items: [["arrow-left", lambda x: app.switch_to_search()]]  # Bouton retour
+            elevation: 6
+            left_action_items: [["arrow-left", lambda x: app.switch_to_search()]]
 
         MapView:
             id: mapview
@@ -108,36 +195,36 @@ ScreenManager:
             zoom: 18
             size_hint: 1, 0.45
 
-        ScrollView:
-            size_hint_y: 0.3
-            MDList:
-                id: directions_list
 
-        BoxLayout:
+        MDBoxLayout:
             orientation: 'vertical'
-            size_hint_y: 0.25
-            padding: 10
-            spacing: 5
-
+            adaptive_height: True
+            padding: dp(10)
+            spacing: dp(10)
             MDTextField:
                 id: start_location
                 hint_text: "Point de départ (bâtiment, salle ou coordonnées)"
                 mode: "rectangle"
+                icon_right: "map-marker"
                 on_text: app.show_suggestions(self.text, "start")
 
             MDTextField:
                 id: end_location
                 hint_text: "Destination (bâtiment, salle ou coordonnées)"
                 mode: "rectangle"
+                icon_right: "map-marker-path"
                 on_text: app.show_suggestions(self.text, "end")
 
             MDRaisedButton:
                 text: "Trouver l'itinéraire"
                 size_hint_y: None
                 height: 40
+                md_bg_color: 0.172, 0.216, 0.318, 1
                 on_release: app.calculate_route()
 
+    
 '''
+
 
 # Définir les écrans comme des classes (optionnel, mais utile pour des personnalisations futures)
 class LoadingScreen(Screen):
@@ -147,7 +234,10 @@ class MainScreen(Screen):
     pass
 class SecondScreen(Screen):
     pass
-class Main(MDApp):
+
+class ClickableMDBoxLayout(ButtonBehavior, MDBoxLayout):
+    pass
+class main(MDApp):
     def build(self):
         # 🔹 Supprimer l'ancien itinéraire au démarrage
         self.screen_manager = Builder.load_string(KV)
@@ -174,35 +264,50 @@ class Main(MDApp):
         self.screen_manager.current = 'search'
 
     def load_geojson_layers(self, numbat, mapview):
-        """Affiche le bâtiment recherché sur la bonne carte"""
+        """Charge le GeoJSON du bâtiment et centre la carte sur ses coordonnées."""
         
-        # ✅ Vérifier si la couche existe avant de la supprimer
+        # Supprimer les anciennes couches
         for layer in self.geojson_layers:
-            if layer in mapview.children:  # 🔹 Vérifie si `layer` est bien dans `mapview`
+            if layer in mapview.children:
                 mapview.remove_widget(layer)
-        
-        self.geojson_layers.clear()  # ✅ Nettoyer la liste
+        self.geojson_layers.clear()
 
+        # Connexion à la base
         db = DatabaseManager.DatabaseManager()
         db.connect()
         cursor = db.cursor
-
-        cursor.execute("SELECT geojson_path FROM Batiment WHERE numbat = ?", (numbat,))
+        
+        # Sélectionner lat, long et geojson_path
+        # Remarque : "long" est un mot-clé pour certains SGBD ou langages,
+        #            si besoin, encadrez-le avec des guillemets inversés (`long`) ou renommez la colonne.
+        cursor.execute("SELECT lat, `long`, geojson_path FROM Batiment WHERE numbat = ?", (numbat,))
         result = cursor.fetchone()
         db.close()
 
-        if result and result[0]:
-            geojson_path = os.path.join(os.getcwd(), result[0])
-            if os.path.exists(geojson_path):
-                geojson_layer = GeoJsonMapLayer(source=geojson_path)
-                geojson_layer.opacity = 1
-                mapview.add_widget(geojson_layer)
-                self.geojson_layers.append(geojson_layer)  # ✅ Ajoute la couche pour éviter l'erreur
-                print(f"✅ Bâtiment {numbat} affiché depuis {geojson_path}.")
-            else:
-                print(f"⚠️ Le fichier GeoJSON {geojson_path} n'existe pas.")
+        if not result:
+            print(f"⚠️ Aucun enregistrement trouvé pour le bâtiment {numbat}.")
+            return
+
+        lat_, long_, geojson_path = result
+        print(f"✅ Coordonnées du bâtiment {numbat} : lat={lat_}, long={long_}")
+
+        # Charger la couche GeoJSON si le fichier existe
+        geojson_path = os.path.join(os.getcwd(), geojson_path)
+        if os.path.exists(geojson_path):
+            geojson_layer = GeoJsonMapLayer(source=geojson_path)
+            geojson_layer.opacity = 1
+            mapview.add_widget(geojson_layer)
+            self.geojson_layers.append(geojson_layer)
+            print(f"✅ Bâtiment {numbat} affiché depuis {geojson_path}.")
         else:
-            print(f"⚠️ Aucun fichier GeoJSON trouvé en base pour le bâtiment {numbat}.")
+            print(f"⚠️ Le fichier GeoJSON {geojson_path} n'existe pas.")
+            return
+
+        # Centrer la carte sur les coordonnées récupérées
+        # Assurez-vous que lat_ et long_ soient bien des float
+        mapview.center_on(float(long_), float(lat_))
+        # Eventuellement, forcer la mise à jour de la MapView
+        Clock.schedule_once(mapview.do_update, 0)
 
     def toggle_opacity(self, dt):
         """Alterner l’opacité entre 0 et 1 pour chaque bâtiment GeoJSON."""
@@ -210,21 +315,33 @@ class Main(MDApp):
             layer.opacity = 0 if layer.opacity == 1 else 1
 
     def show_suggestions(self, text, field):
-        """Affiche les suggestions de bâtiments/salles lors de la saisie."""
+        """Affiche les suggestions de bâtiments/salles lors de la saisie, en ignorant les accents."""
         if not text:
             return
+
+        # On normalise la chaîne de recherche pour supprimer les accents
+        text_normalized = unidecode(text.lower())
 
         db = DatabaseManager.DatabaseManager()
         db.connect()
         cursor = db.cursor
 
-        query = f"%{text.lower()}%"
-        cursor.execute("SELECT nom FROM Batiment WHERE LOWER(nom) LIKE ?", (query,))
-        results = cursor.fetchall()
+        # On récupère tous les noms de bâtiment et de salle (ou on peut faire un premier filtrage en SQL si vous voulez limiter le volume)
+        cursor.execute("SELECT nom FROM Batiment")
+        bat_results = cursor.fetchall()
 
-        cursor.execute("SELECT numsalle FROM Etage WHERE LOWER(numsalle) LIKE ?", (query,))
-        results += cursor.fetchall()
+        cursor.execute("SELECT numsalle FROM Etage")
+        salle_results = cursor.fetchall()
         db.close()
+
+        # On filtre en Python en supprimant les accents de chaque enregistrement
+        results = []
+        for (nom,) in bat_results:
+            if text_normalized in unidecode(nom.lower()):
+                results.append((nom,))
+        for (numsalle,) in salle_results:
+            if text_normalized in unidecode(numsalle.lower()):
+                results.append((numsalle,))
 
         suggestions = [
             {"text": result[0], "on_release": lambda x=result[0], f=field: self.select_suggestion(x, f)}
@@ -316,13 +433,7 @@ class Main(MDApp):
         route_data = itineraire.get_valhalla_route(start, end, filename)
 
         if route_data:
-            directions = route_data["directions"]
-            total_distance = route_data["distance"]
-            total_duration = route_data["duration"]
 
-            print(f"✅ Distance : {total_distance} km, Durée : {total_duration:.2f} min")
-            print("📌 Étapes du trajet :", directions)
-            self.display_directions(directions, total_distance, total_duration)
             self.add_route_to_map(filename)
         else:
             print("❌ Échec de récupération de l'itinéraire.")
@@ -336,6 +447,7 @@ class Main(MDApp):
             print(f"📌 Chargement du fichier GeoJSON : {geojson_file}")
             self.route_layer = GeoJsonMapLayer(source=geojson_file)
             self.mapview.add_widget(self.route_layer)
+            
             print("✅ Itinéraire ajouté sur la carte")
         else:
             print(f"⚠️ Erreur : fichier GeoJSON introuvable ({geojson_file})")
@@ -395,6 +507,22 @@ class Main(MDApp):
 
         self.search_menu.open()
 
+    def batiment_scroll(self, bat):
+        if bat == "bat5":
+            self.load_geojson_layers(5, self.mapview_search)
+        elif bat == "Bu":
+            self.load_geojson_layers(6, self.mapview_search)
+        elif bat == "amphi":
+            self.load_geojson_layers(8, self.mapview_search)
+        else:
+            print(f"⚠️ Aucune action définie pour '{bat}'.")
+        # Actualiser le MapView de l'écran courant
+        Clock.schedule_once(lambda dt: self.mapview_search.do_update(dt), 1)
+     
+
+
+
+
 
     def select_building(self, result):
         """Sélectionne un bâtiment et met le texte dans le champ de recherche."""
@@ -404,6 +532,7 @@ class Main(MDApp):
             print(f"📌 Sélectionné : {result[1]}")
         
         self.search_menu.dismiss()
+
 
 
 
@@ -431,4 +560,4 @@ class Main(MDApp):
         self.mapview.add_marker(marker)
 
 if __name__ == "__main__":
-        Main().run()
+        main().run()
