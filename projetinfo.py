@@ -41,3 +41,26 @@ if response.status_code == 200:
 
 else:
     print("❌ Erreur lors du calcul de l’itinéraire :", response.text)
+
+
+import asyncio
+from winsdk.windows.devices.geolocation import Geolocator, PositionStatus
+
+async def get_precise_location():
+    locator = Geolocator()
+
+    if locator.location_status in [PositionStatus.NOT_AVAILABLE, PositionStatus.DISABLED]:
+        print("⚠️ Localisation désactivée ou non disponible.")
+        return None
+
+    pos = await locator.get_geoposition_async()  # ← await nécessaire ici
+    coord = pos.coordinate
+    lat = coord.point.position.latitude
+    lon = coord.point.position.longitude
+    accuracy = coord.accuracy
+    print(f"📍 Latitude : {lat}, Longitude : {lon}, Précision : {accuracy} m")
+    return lat, lon
+
+# Exécution de la fonction async dans un contexte normal :
+if __name__ == "__main__":
+    asyncio.run(get_precise_location())

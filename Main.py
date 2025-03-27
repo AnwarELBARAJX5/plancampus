@@ -20,6 +20,8 @@ from kivymd.uix.list import OneLineListItem
 import sqlite3
 from unidecode import unidecode
 from plyer import gps
+import asyncio
+from winsdk.windows.devices.geolocation import Geolocator, PositionStatus
 # KV string intégrant un écran de chargement et l'écran principal
 KV = '''
 ScreenManager:
@@ -68,7 +70,20 @@ ScreenManager:
             md_bg_color: 0.172, 0.216, 0.318, 1
             elevation: 4
             right_action_items: [["map", lambda x: app.switch_to_main()]]
-
+                    # Bouton "Vous êtes perdu ?"
+            MDFillRoundFlatIconButton:
+                text: "VOUS ÊTES PERDU ?"
+                size_hint_x: 1
+                md_bg_color: 0.172, 0.216, 0.318, 1
+                text_color: 1, 1, 1, 1
+                font_size: "16sp"
+                theme_text_color: "Custom"
+                icon: "navigation"
+                pos_hint: {"center_x": 0.5}
+                padding: [20, 0]
+                on_release:
+                    app.switch_to_main()
+                    app.activate_gps()
         # Champ + bouton "Confirmer" dans une même ligne
         MDBoxLayout:
             orientation: 'horizontal'
@@ -237,6 +252,17 @@ class SecondScreen(Screen):
 
 class ClickableMDBoxLayout(ButtonBehavior, MDBoxLayout):
     pass
+
+async def get_precise_location():
+        locator = Geolocator()
+
+        if locator.location_status in [PositionStatus.NOT_AVAILABLE, PositionStatus.DISABLED]:
+            print("⚠️ Localisation désactivée ou non disponible.")
+            return None
+
+        pos = await locator.get_geoposition_async()
+        coord = pos.coordinate
+        return coord.point.position.longitude,coord.point.position.latitude
 class main(MDApp):
     def build(self):
         # 🔹 Supprimer l'ancien itinéraire au démarrage
@@ -532,32 +558,31 @@ class main(MDApp):
             print(f"📌 Sélectionné : {result[1]}")
         
         self.search_menu.dismiss()
-
-
-
-
     def activate_gps(self):
         try:
-            gps.configure(on_location=self.on_gps_location)
-            gps.start()
-            print("📡 GPS activé")
-        except NotImplementedError:
-            print("❌ GPS non disponible sur cette plateforme.")
+            position = asyncio.run(get_precise_location())
+            if position:
+                lat, lon = position
+                self.on_gps_location(lat=lat, lon=lon)
+                print(f"📡 GPS précis activé : {lat}, {lon}")
+            else:
+                print("❌ Localisation indisponible.")
+        except Exception as e:
+            print(f"❌ Erreur de localisation : {e}")
 
     def on_gps_location(self, **kwargs):
         lat = kwargs['lat']
         lon = kwargs['lon']
         print(f"📍 Position actuelle : {lat}, {lon}")
 
-        # On injecte dans le champ start_location
         self.main_screen.ids.start_location.text = f"{lat},{lon}"
-
-        # Tu peux aussi centrer la carte dessus
         self.mapview.center_on(lat, lon)
-        
-        # (Optionnel) ajouter un marqueur
-        marker = MapMarker(lat=lat, lon=lon)
-        self.mapview.add_marker(marker)
+
+
+    
+
+
+
 
 if __name__ == "__main__":
         main().run()
