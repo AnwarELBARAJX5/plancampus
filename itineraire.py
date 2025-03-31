@@ -33,7 +33,7 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
             {"lat": end[1], "lon": end[0]}
         ],
         "costing": "pedestrian",  
-        "directions_options": {"units": "kilometers"}
+        "directions_options": {"units": "kilometers","language": "fr-FR"}
     }
 
     response = requests.post(url, json=data)
@@ -48,9 +48,9 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
         corrected_coordinates = [[lon/10, lat/10] for lat, lon in coordinates]  # 🔄 Correction lat/lon
         directions = [maneuver["instruction"] for leg in route["trip"]["legs"] for maneuver in leg["maneuvers"]]
         total_distance = route["trip"]["summary"]["length"]  # Distance totale en km
-        total_duration = route["trip"]["summary"]["time"] / 60  # Temps en minutes
+        total_duration = int(route["trip"]["summary"]["time"] / 60)  # Temps en minutes
         maneuvers = route["trip"]["legs"][0]["maneuvers"]
-        print(directions,total_distance,total_duration)
+        print(total_distance,total_duration,directions)
         # 🔹 Générer GeoJSON
         geojson_data = {
             "type": "FeatureCollection",
@@ -65,6 +65,7 @@ def get_valhalla_route(start, end, filename="itineraire_valhalla.geojson"):
                         "name": "Itinéraire Valhalla",
                         "stroke-width": 2,  # 🔧 Fix automatique
                         "stroke": "#FF0000",
+                        "language": "fr-FR"
                     }
                 }
             ]

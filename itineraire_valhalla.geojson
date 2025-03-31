@@ -103,7 +103,8 @@
       "properties": {
         "name": "Itin\u00e9raire Valhalla",
         "stroke-width": 2,
-        "stroke": "#FF0000"
+        "stroke": "#FF0000",
+        "language": "fr-FR"
       }
     }
   ]

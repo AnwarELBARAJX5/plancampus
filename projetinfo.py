@@ -1,66 +1,95 @@
-import requests
-import json
+from kivy.lang import Builder
+from kivy.properties import StringProperty
+from kivy.uix.screenmanager import Screen
 
-# 📌 Ta clé API OpenRouteService (remplace-la par la tienne)
-ORS_API_KEY = "5b3ce3597851110001cf624883181b06add74d679245db2128ba978b"
-
-
-# 📌 Coordonnées du départ et de l'arrivée (longitude, latitude)
-start = [5.3795,43.3059]  # Campus Saint-Charles
-end = [	5.3794,43.3065]    # Destination
-
-# 📌 URL de l'API ORS pour les itinéraires piétons
-url = "https://api.openrouteservice.org/v2/directions/foot-walking/geojson"
-
-# 📌 Construire la requête POST
-headers = {
-    "Authorization": ORS_API_KEY,
-    "Content-Type": "application/json"
-}
-
-payload = {
-    "coordinates": [start, end],
-    "format": "geojson",
-    "preference": "fastest"
-    
-}
-
-# 📌 Envoyer la requête POST
-response = requests.post(url, headers=headers, json=payload)
-
-# 📌 Vérifier la réponse
-if response.status_code == 200:
-    route = response.json()
-    print("✅ Itinéraire trouvé !")
-
-    # 📌 Sauvegarder l'itinéraire en GeoJSON
-    with open("itineraire.geojson", "w") as f:
-        json.dump(route, f)
-
-    print("✅ Fichier 'itineraire.geojson' créé avec succès !")
-
-else:
-    print("❌ Erreur lors du calcul de l’itinéraire :", response.text)
+from kivymd.icon_definitions import md_icons
+from kivymd.app import MDApp
+from kivymd.uix.list import OneLineIconListItem
 
 
-import asyncio
-from winsdk.windows.devices.geolocation import Geolocator, PositionStatus
+Builder.load_string(
+    '''
+#:import images_path kivymd.images_path
 
-async def get_precise_location():
-    locator = Geolocator()
 
-    if locator.location_status in [PositionStatus.NOT_AVAILABLE, PositionStatus.DISABLED]:
-        print("⚠️ Localisation désactivée ou non disponible.")
-        return None
+<CustomOneLineIconListItem>
 
-    pos = await locator.get_geoposition_async()  # ← await nécessaire ici
-    coord = pos.coordinate
-    lat = coord.point.position.latitude
-    lon = coord.point.position.longitude
-    accuracy = coord.accuracy
-    print(f"📍 Latitude : {lat}, Longitude : {lon}, Précision : {accuracy} m")
-    return lat, lon
+    IconLeftWidget:
+        icon: root.icon
 
-# Exécution de la fonction async dans un contexte normal :
-if __name__ == "__main__":
-    asyncio.run(get_precise_location())
+
+<PreviousMDIcons>
+
+    MDBoxLayout:
+        orientation: 'vertical'
+        spacing: dp(10)
+        padding: dp(20)
+
+        MDBoxLayout:
+            adaptive_height: True
+
+            MDIconButton:
+                icon: 'magnify'
+
+            MDTextField:
+                id: search_field
+                hint_text: 'Search icon'
+                on_text: root.set_list_md_icons(self.text, True)
+
+        RecycleView:
+            id: rv
+            key_viewclass: 'viewclass'
+            key_size: 'height'
+
+            RecycleBoxLayout:
+                padding: dp(10)
+                default_size: None, dp(48)
+                default_size_hint: 1, None
+                size_hint_y: None
+                height: self.minimum_height
+                orientation: 'vertical'
+'''
+)
+
+
+class CustomOneLineIconListItem(OneLineIconListItem):
+    icon = StringProperty()
+
+
+class PreviousMDIcons(Screen):
+
+    def set_list_md_icons(self, text="", search=False):
+        '''Builds a list of icons for the screen MDIcons.'''
+
+        def add_icon_item(name_icon):
+            self.ids.rv.data.append(
+                {
+                    "viewclass": "CustomOneLineIconListItem",
+                    "icon": name_icon,
+                    "text": name_icon,
+                    "callback": lambda x: x,
+                }
+            )
+
+        self.ids.rv.data = []
+        for name_icon in md_icons.keys():
+            if search:
+                if text in name_icon:
+                    add_icon_item(name_icon)
+            else:
+                add_icon_item(name_icon)
+
+
+class MainApp(MDApp):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.screen = PreviousMDIcons()
+
+    def build(self):
+        return self.screen
+
+    def on_start(self):
+        self.screen.set_list_md_icons()
+
+
+MainApp().run()

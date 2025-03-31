@@ -4,13 +4,25 @@ Config.set('graphics', 'height', '600')
 
 from kivy.lang import Builder
 from kivymd.app import MDApp
-from kivy_garden.mapview import MapView, MapMarker
+from kivy_garden.mapview import MapView, MapMarker,MapMarkerPopup
 from kivy_garden.mapview.geojson import GeoJsonMapLayer
 from kivy.clock import Clock
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivymd.uix.bottomsheet import MDCustomBottomSheet
 from kivy.uix.behaviors import ButtonBehavior
 from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.button import MDFloatingActionButton
+from kivymd.uix.dialog import MDDialog
+from kivymd.uix.button import MDFlatButton
+from kivymd.uix.expansionpanel import MDExpansionPanel, MDExpansionPanelThreeLine
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.list import OneLineListItem
+
+
+
+
+
+
 
 import os
 import DatabaseManager
@@ -31,6 +43,8 @@ ScreenManager:
 <ClickableMDBoxLayout>:
     on_release: print("MDBoxLayout cliqué!")
     # Ajoutez ici vos widgets enfants et propriétés
+
+
 
 <LoadingScreen>:
     name: 'loading'
@@ -60,72 +74,56 @@ ScreenManager:
 
 <SecondScreen>:
     name: 'search'
+
     MDBoxLayout:
         orientation: 'vertical'
+
 
         MDTopAppBar:
             title: 'Plan Campus Saint-Charles'
             size_hint_y: None
             height: self.theme_cls.standard_increment
             md_bg_color: 0.172, 0.216, 0.318, 1
-            elevation: 4
-            right_action_items: [["map", lambda x: app.switch_to_main()]]
+            elevation: 2
                     # Bouton "Vous êtes perdu ?"
-            MDFillRoundFlatIconButton:
-                text: "VOUS ÊTES PERDU ?"
-                size_hint_x: 1
-                md_bg_color: 0.172, 0.216, 0.318, 1
-                text_color: 1, 1, 1, 1
-                font_size: "16sp"
-                theme_text_color: "Custom"
-                icon: "navigation"
-                pos_hint: {"center_x": 0.5}
-                padding: [20, 0]
-                on_release:
-                    app.switch_to_main()
-                    app.activate_gps()
+
         # Champ + bouton "Confirmer" dans une même ligne
+        
         MDBoxLayout:
             orientation: 'horizontal'
             adaptive_height: True
-            padding: dp(10)
-            spacing: dp(10)
+            padding: dp(5)
+            spacing: dp(5)
 
             MDTextField:
                 id: search_field
                 hint_text: "Rechercher un bâtiment..."
-                mode: "rectangle"
+                mode: "line"
                 icon_right: "magnify"
                 size_hint_x: 0.5
                 on_text: app.show_suggestions_search(self.text)
 
             MDRaisedButton:
                 text: "Confirmer"
-                size_hint_x: 0.3
+                size_hint_x: 0.2
                 md_bg_color: 0.172, 0.216, 0.318, 1
+                pos_hint: {"center_x": 0.8, "center_y": 0.5}
+     
                 on_release: app.show_suggestions_search(search_field.text, confirm=True)
 
         MapView:
             id: mapview_search
             lat: 43.305446
             lon: 5.377284
-            zoom: 18
+            zoom: 16
             size_hint: 1, 0.45
+
+                
+            
+
+
         
-            # Bouton "Vous êtes perdu ?"
-            MDFillRoundFlatIconButton:
-                text: "VOUS ÊTES PERDU ?"
-                size_hint_x: 1
-                md_bg_color: 0.172, 0.216, 0.318, 1
-                text_color: 1, 1, 1, 1
-                font_size: "16sp"
-                theme_text_color: "Custom"
-                icon: "navigation"
-                pos_hint: {"center_x": 0.5}
-                padding: [20, 0]
-                on_release:
-                    app.switch_to_main()
-                    app.activate_gps()
+
         MDBoxLayout:
             size_hint_y: 0.2
             padding: [10, 0, 10, 0]
@@ -146,9 +144,13 @@ ScreenManager:
                                 halign:"center"
                                 bold:True
                         MDScrollView:
+                            padding: dp(5)
+                            spacing: dp(5)
                             do_scroll_y:False
                             do_scroll_x:True
                             MDBoxLayout:
+                                padding: dp(10)
+                                spacing: dp(10)
                                 size_hint_x:1.5
                                 size_hint_y:1.2
                                 ClickableMDBoxLayout:
@@ -189,6 +191,29 @@ ScreenManager:
                                         font_size:20
                                         bold:True
                                         halign:"center"
+                        BoxLayout:
+                            orientation: "horizontal"
+                            
+                            padding: [20,20]
+                            
+                            MDFillRoundFlatIconButton:
+                                text: "VOUS ÊTES PERDU ?"
+                                size_hint_x: 1
+                                md_bg_color: 0.172, 0.216, 0.318, 1
+                                text_color: 1, 1, 1, 1
+                                font_size: "16sp"
+                                theme_text_color: "Custom"
+                                icon: "navigation"
+                                pos_hint: {"center_x": 0.5}
+                                padding: [0, 0]
+                                on_release:
+                                    app.switch_to_main()
+                                    app.activate_gps()
+
+
+        
+
+
                                         
 <MainScreen>:
     name: 'main'
@@ -203,39 +228,81 @@ ScreenManager:
             elevation: 6
             left_action_items: [["arrow-left", lambda x: app.switch_to_search()]]
 
-        MapView:
-            id: mapview
-            lat: 43.305446
-            lon: 5.377284
-            zoom: 18
-            size_hint: 1, 0.45
 
-
-        MDBoxLayout:
-            orientation: 'vertical'
-            adaptive_height: True
-            padding: dp(10)
-            spacing: dp(10)
-            MDTextField:
-                id: start_location
-                hint_text: "Point de départ (bâtiment, salle ou coordonnées)"
-                mode: "rectangle"
-                icon_right: "map-marker"
-                on_text: app.show_suggestions(self.text, "start")
-
-            MDTextField:
-                id: end_location
-                hint_text: "Destination (bâtiment, salle ou coordonnées)"
-                mode: "rectangle"
-                icon_right: "map-marker-path"
-                on_text: app.show_suggestions(self.text, "end")
-
-            MDRaisedButton:
-                text: "Trouver l'itinéraire"
+        MDScrollView:
+            id: route_info_scroll
+            do_scroll_x: False
+            do_scroll_y: True
+            size_hint_y: None
+            height: "0dp" 
+            MDList:
+                id: route_info_list
                 size_hint_y: None
-                height: 40
+                height: self.minimum_height
+                canvas.before:
+                    Color:
+                        rgba: 0.9, 0.9, 0.9, 1  # Fond gris clair
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+        FloatLayout:
+            MapView:
+                id: mapview
+                lon: 43.305446
+                lat: 5.377284
+                zoom: 16
+                MapMarkerPopup:
+                    source:"marker.png"
+                    size_hint: None, None
+                    size: "60dp", "60dp"
+                    lon:5.405325476016812
+                    lat:43.28400325355717
+
+
+
+
+
+
+            MDFloatingActionButton:
                 md_bg_color: 0.172, 0.216, 0.318, 1
-                on_release: app.calculate_route()
+                icon: "google-maps"
+                pos_hint: {"right": 0.95, "top": 0.95}
+                on_release: app.activate_gps()
+
+            
+
+        
+    MDBoxLayout:
+        orientation: 'vertical'
+        canvas.before:
+            Color:
+                rgba: (1, 1, 1, 1)
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        adaptive_height: True
+        padding: dp(2)
+        spacing: dp(2)
+        MDTextField:
+            id: start_location
+            hint_text: "Point de départ (bâtiment, salle ou coordonnées)"
+            mode: "rectangle"
+            icon_right: "map-marker"
+            on_text: app.show_suggestions(self.text, "start")
+
+        MDTextField:
+            id: end_location
+            hint_text: "Destination (bâtiment, salle ou coordonnées)"
+            mode: "rectangle"
+            icon_right: "map-marker-path"
+            on_text: app.show_suggestions(self.text, "end")
+
+        MDRaisedButton:
+            text: "Trouver l'itinéraire"
+            size_hint_y: None
+            height: 40
+            md_bg_color: 0.172, 0.216, 0.318, 1
+            on_release: app.calculate_route()
 
     
 '''
@@ -267,7 +334,7 @@ class main(MDApp):
     def build(self):
         # 🔹 Supprimer l'ancien itinéraire au démarrage
         self.screen_manager = Builder.load_string(KV)
-        
+        self.gps_marker = None
         # Récupérer les écrans modifiés
         self.search_screen = self.screen_manager.get_screen('search')
         self.main_screen = self.screen_manager.get_screen('main')
@@ -277,17 +344,24 @@ class main(MDApp):
         self.geojson_layers = [] 
         self.current_menu = None 
         self.route_layer = None
-        Clock.schedule_once(self.switch_to_search, 5)  # Commencer avec l'écran de recherche
+        Clock.schedule_once(self.switch_to_search, 3)  # Commencer avec l'écran de recherche
         
         return self.screen_manager
     
     def switch_to_main(self, dt=None):
         """🔹 Passer à l'écran de l'itinéraire"""
         self.screen_manager.current = 'main'
+        
+        Clock.schedule_once(lambda dt: self.mapview.center_on(43.305446, 5.377284), 0.1)
+        Clock.schedule_once(self.mapview.do_update, 0.1)
+
+
 
     def switch_to_search(self, dt=None):
         """🔹 Revenir à l'écran de recherche"""
         self.screen_manager.current = 'search'
+    def switch_screen(self, screen_name):
+        self.root.current = screen_name
 
     def load_geojson_layers(self, numbat, mapview):
         """Charge le GeoJSON du bâtiment et centre la carte sur ses coordonnées."""
@@ -459,10 +533,16 @@ class main(MDApp):
         route_data = itineraire.get_valhalla_route(start, end, filename)
 
         if route_data:
-
+            self.main_screen.ids.route_info_scroll.height = "105dp"
             self.add_route_to_map(filename)
+            self.display_directions(
+            route_data["directions"],
+            route_data["distance"],
+            route_data["duration"]
+        )
         else:
             print("❌ Échec de récupération de l'itinéraire.")
+            self.main_screen.ids.route_info_scroll.height = "0dp"
 
     def add_route_to_map(self, geojson_file):
         if self.route_layer:
@@ -479,15 +559,14 @@ class main(MDApp):
             print(f"⚠️ Erreur : fichier GeoJSON introuvable ({geojson_file})")
         
     def display_directions(self, directions, total_distance, total_duration):
-        directions_list = self.main_screen.ids.directions_list
-        directions_list.clear_widgets()
+        route_list = self.main_screen.ids.route_info_list
+        route_list.clear_widgets()
         print("📌 Mise à jour des étapes de l'itinéraire...")
-        directions_list.add_widget(OneLineListItem(text=f"Distance : {total_distance:.2f} km"))
-        directions_list.add_widget(OneLineListItem(text=f"Durée estimée : {total_duration:.2f} min"))
-
+        route_list.add_widget(OneLineListItem(text=f"Distance : {total_distance:.2f} km"))
+        route_list.add_widget(OneLineListItem(text=f"Durée estimée : {total_duration:.2f} min"))
         for step in directions:
             print(f"Ajout de l'étape : {step}")
-            directions_list.add_widget(OneLineListItem(text=step))
+            route_list.add_widget(OneLineListItem(text=step))
         print("✅ Instructions mises à jour dans l'interface.")
 
     def show_suggestions_search(self, text, confirm=False):
@@ -565,6 +644,8 @@ class main(MDApp):
                 lat, lon = position
                 self.on_gps_location(lat=lat, lon=lon)
                 print(f"📡 GPS précis activé : {lat}, {lon}")
+                Clock.schedule_once(lambda dt: self.mapview.center_on(lon, lat), 0.1)
+                Clock.schedule_once(self.mapview.do_update, 0.1)
             else:
                 print("❌ Localisation indisponible.")
         except Exception as e:
@@ -577,6 +658,16 @@ class main(MDApp):
 
         self.main_screen.ids.start_location.text = f"{lat},{lon}"
         self.mapview.center_on(lat, lon)
+
+        # Vérifier et supprimer l'ancien marqueur si existant
+        if hasattr(self, 'gps_marker') and self.gps_marker:
+            self.mapview.remove_marker(self.gps_marker)
+
+        # Créer un nouveau marqueur par défaut sur la position GPS
+        self.gps_marker = MapMarkerPopup(lat=lat, lon=lon)
+        Clock.schedule_once(lambda dt: self.mapview.add_widget(self.gps_marker), 0.1)
+        Clock.schedule_once(self.mapview.do_update, 0.1)
+
 
 
     
