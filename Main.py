@@ -17,6 +17,11 @@ from kivymd.uix.button import MDFlatButton
 from kivymd.uix.expansionpanel import MDExpansionPanel, MDExpansionPanelThreeLine
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.list import OneLineListItem
+from kivy.properties import NumericProperty
+from kivymd.uix.label import MDLabel
+from kivymd.uix.button import MDRaisedButton
+
+
 
 
 
@@ -40,6 +45,7 @@ ScreenManager:
     LoadingScreen:
     SecondScreen:  # Écran principal pour la recherche
     MainScreen:    # Écran pour l'itinéraire
+    BuildingInfoScreen:  
 <ClickableMDBoxLayout>:
     on_release: print("MDBoxLayout cliqué!")
     # Ajoutez ici vos widgets enfants et propriétés
@@ -303,6 +309,15 @@ ScreenManager:
             height: 40
             md_bg_color: 0.172, 0.216, 0.318, 1
             on_release: app.calculate_route()
+<BuildingInfoScreen>:
+    name: 'building_info'
+    MDBoxLayout:
+        orientation: 'vertical'
+        MDTopAppBar:
+            title: 'Infos Bâtiments & Salles'
+            left_action_items: [["arrow-left", lambda x: app.switch_to_search()]]
+        ScrollView:
+            id: building_scrollview
 
     
 '''
@@ -319,6 +334,68 @@ class SecondScreen(Screen):
 
 class ClickableMDBoxLayout(ButtonBehavior, MDBoxLayout):
     pass
+
+class BuildingInfoScreen(Screen):
+    # Propriété pour recevoir l'identifiant du bâtiment sélectionné
+    selected_building = NumericProperty(0)
+
+
+    def on_enter(self):
+        if self.selected_building == 0:
+            info_text = "Aucun bâtiment sélectionné."
+        else:
+            # Récupérer les informations du bâtiment sélectionné
+            db = DatabaseManager.DatabaseManager()
+            building = db.get_building_with_rooms(self.selected_building)
+
+            if building:
+                info_text = f"Bâtiment {building['numbat']} \n"
+                info_text += f"{building['nbetage']} Étages \n"
+                info_text += f"Coordonnées : ({building['lat']}, {building['long']})\n"
+                if building["salles"]:
+                    info_text += "Salles associées :\n"
+                    for salle in building["salles"]:
+                        if "-" in salle['numsalle']:
+                            info_text += f" - Salle {salle['numsalle']} \n"
+                        else:
+                            info_text += f" - {salle['numsalle']} \n"
+                else:
+                    info_text += "Aucune salle associée."
+            else:
+                info_text = "Bâtiment non trouvé."
+
+        # Vider le ScrollView
+        scrollview = self.ids.building_scrollview  # Assurez-vous que cet id est défini dans votre KV
+        scrollview.clear_widgets()
+        
+        # Créer un layout pour contenir le label et le bouton
+        layout = MDBoxLayout(orientation="vertical", spacing=10, size_hint_y=None,padding=[10, 10, 10, 10])
+        layout.bind(minimum_height=layout.setter('height'))
+
+        # Créer et configurer le label avec les informations
+        label = MDLabel(
+            text=info_text,
+            halign="left",
+            valign="top",
+            size_hint_y=None
+        )
+        label.bind(texture_size=label.setter("size"))
+        layout.add_widget(label)
+
+        # Créer le bouton "Visualiser sur la carte"
+        btn = MDRaisedButton(
+            text="Visualiser sur la carte",
+            size_hint_y=None,
+            height=50,
+            padding=[10, 10, 10, 10]
+        )
+        btn.bind(on_release=lambda instance: MDApp.get_running_app().switch_to_search())
+
+        layout.add_widget(btn)
+
+        # Ajouter le layout complet dans le ScrollView
+        scrollview.add_widget(layout)
+
 
 async def get_precise_location():
         locator = Geolocator()
@@ -342,9 +419,10 @@ class main(MDApp):
         self.mapview_search = self.search_screen.ids.mapview_search
         self.mapview = self.main_screen.ids.mapview
         self.geojson_layers = [] 
+        self.selected_building = None  
         self.current_menu = None 
         self.route_layer = None
-        Clock.schedule_once(self.switch_to_search, 3)  # Commencer avec l'écran de recherche
+        Clock.schedule_once(self.switch_to_search, 4)  # Commencer avec l'écran de recherche
         
         return self.screen_manager
     
@@ -533,7 +611,7 @@ class main(MDApp):
         route_data = itineraire.get_valhalla_route(start, end, filename)
 
         if route_data:
-            self.main_screen.ids.route_info_scroll.height = "105dp"
+            self.main_screen.ids.route_info_scroll.height = "90dp"
             self.add_route_to_map(filename)
             self.display_directions(
             route_data["directions"],
@@ -588,6 +666,8 @@ class main(MDApp):
 
         if confirm:
             selected_building = results[0][0]
+            self.selected_building = selected_building
+            self.switch_to_building_info(selected_building)
             print(f"✅ Confirmation du bâtiment {selected_building}")
 
             self.load_geojson_layers(selected_building, self.mapview_search)
@@ -602,7 +682,7 @@ class main(MDApp):
             caller=self.search_screen.ids.search_field,
             items=[
                 {
-                    "text": f"{result[1]} (Bâtiment {result[0]})",
+                    "text": f"{result[1]} ",
                     "on_release": lambda x=result: self.select_building(x)
                 }
                 for result in results
@@ -667,6 +747,12 @@ class main(MDApp):
         self.gps_marker = MapMarkerPopup(lat=lat, lon=lon)
         Clock.schedule_once(lambda dt: self.mapview.add_widget(self.gps_marker), 0.1)
         Clock.schedule_once(self.mapview.do_update, 0.1)
+
+    def switch_to_building_info(self, building_id):
+        # Récupérer l'écran BuildingInfoScreen et définir le bâtiment sélectionné
+        screen = self.screen_manager.get_screen("building_info")
+        screen.selected_building = building_id
+        self.screen_manager.current = "building_info"
 
 
 

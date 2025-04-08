@@ -78,6 +78,42 @@ class DatabaseManager:
             self.conn.close()
             print(f"✅ Chemin GeoJSON ajouté : {geojson_path} pour bâtiment {numbat}")
 
+    
+    def get_building_with_rooms(self, numbat):
+        """Récupère les informations d'un bâtiment spécifique ainsi que la liste de ses salles associées, sans le champ geojson_path."""
+        self.connect()
+        query = """
+        SELECT B.numbat, B.nom, B.nbetage, B.long, B.lat,
+            E.numsalle, E.long, E.lat
+        FROM Batiment B
+        LEFT JOIN Etage E ON B.numbat = E.numbat
+        WHERE B.numbat = ?
+        ORDER BY B.numbat;
+        """
+        self.cursor.execute(query, (numbat,))
+        results = self.cursor.fetchall()
+        self.close()
+
+        building = None
+        for row in results:
+            numbat, nom, nbetage, long_, lat, numsalle, salle_long, salle_lat = row
+            if building is None:
+                building = {
+                    "numbat": numbat,
+                    "nom": nom,
+                    "nbetage": nbetage,
+                    "long": long_,
+                    "lat": lat,
+                    "salles": []
+                }
+            if numsalle is not None:
+                building["salles"].append({
+                    "numsalle": numsalle,
+                    "long": salle_long,
+                    "lat": salle_lat
+                })
+        return building
+
 # Fonction externe pour générer et afficher les salles d'un bâtiment et les insérer dans la base de données
 def generer_salles_batiment(numBat, salleParetage, dic,indices_depart=None):
     """
@@ -241,3 +277,7 @@ def get_location_from_db(name):
 
     conn.close()
     return (result[1], result[0]) if result else None
+
+
+
+

@@ -4,7 +4,7 @@ import polyline
 import os
 import sys
 sys.path.append(os.path.abspath("batgeojson"))
-import test
+
 
 
 import requests
